@@ -50,26 +50,27 @@ dem_cols <- c("age", "race___1", "race___2", "race___3", "race___4", "race___5",
 dem_dat <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1", 
                        c(index_cols, dem_cols)]
 
-# TODO: Deal with "prefer not to answer"
-
-
-
-
-
 # Clean age
 
-# TODO: One participant has NA (likely for "prefer not to answer")
+  # Note: No participants entered "99"
+
+sum(dem_dat$age == 99, na.rm = TRUE) == 0
+
+  # TODO: Participant 120 has NA, 0, or "" on all demographics (likely due to attrition)
 
 sum(is.na(dem_dat$age)) == 1
+# View(mdib_hd_dat[mdib_hd_dat$record_id == 120, ])
 
 
 
 
 
-  # TODO: Participant 814 has value of 0
+  # TODO (Was this how pna was coded for age? Note that data dictionary says
+  # age was computed from "date_of_birth". Did they choose pna for that?): 
+  # Participant 814 has value of 0
 
 dem_dat$record_id[!is.na(dem_dat$age) & dem_dat$age == 0] == 814
-
+# View(mdib_hd_dat[mdib_hd_dat$record_id == 814, ])
 
 
 
@@ -101,7 +102,7 @@ for (i in 1:nrow(dem_dat)) {
   }
 }
 
-  # TODO (deal with prefer not to answer--see above): Reorder levels
+  # Reorder levels
 
 dem_dat$race_coll <-
   factor(dem_dat$race_coll,
@@ -109,7 +110,90 @@ dem_dat$race_coll <-
                     "Native Hawaiian or Other Pacific Islander", "White",
                     "More than one race", "Other", "Prefer not to answer"))
 
-table(dem_dat$race_coll, useNA = "always")
+# Clean ethnicity
+
+dem_dat$ethnicity <- 
+  factor(dem_dat$ethnicity, levels = 1:4,
+         labels = c("Hispanic or Latino", "Not Hispanic or Latino", "Unknown", 
+                    "Prefer not to answer"))
+
+# Clean country
+
+  # Recode variations of United States
+
+united_states <- c("America", "U.S", "U.S.", "united states", "United States",
+                   "United states ", "United States ", "United States of America",
+                   "US", "usa", "Usa", "USA", "USA ")
+
+dem_dat$country[dem_dat$country %in% united_states] <- "United States"
+
+  # Recode one participant's value of "" with NA
+
+dem_dat$country[dem_dat$country == ""] <- NA
+
+  # Participant 114 responded with a county (TODO: REDACT) in the United States
+
+dem_dat$country[dem_dat$record_id == 114] <- "United States"
+
+# Clean relationship status
+
+dem_dat$relationship_status <- 
+  factor(dem_dat$relationship_status, levels = c(0:9, 99),
+         labels = c("Single", "Single, but casually dating",
+                    "Single, but currently engaged to be married",
+                    "Single, but currently living with someone in a marriage-like relationship",
+                    "Married", "In a domestic or civil union", "Separated", "Divorced", 
+                    "Widow/widower", "Other", "Prefer not to answer"))
+
+# Clean living alone
+
+dem_dat$live_alone <-
+  factor(dem_dat$live_alone, levels = c(0:1, 99),
+         labels = c("No", "Yes", "Prefer not to answer"))
+
+# Clean gender identity
+
+dem_dat$gender <-
+  factor(dem_dat$gender, levels = c(0:4, 99),
+         labels = c("Female", "Male", "Transgender Female", "Transgender Male",
+                    "Other", "Prefer not to answer"))
+
+# Clean sex assigned at birth
+
+dem_dat$sex <-
+  factor(dem_dat$sex, levels = c(0:3, 99),
+         labels = c("Female", "Male", "Intersex", "Unknown or other", 
+                    "Prefer not to answer"))
+
+# Clean employment status
+
+dem_dat$employment_status <-
+  factor(dem_dat$employment_status, levels = c(0:8, 99),
+         labels = c("Working full-time", "Working part-time", "Unemployed or laid off",
+                    "Looking for work", "Homemaker/keeping house or raising children full-time",
+                    "Retired", "Student", "Other", "Unknown", "Prefer not to answer"))
+
+# Clean education
+
+dem_dat$education <-
+  factor(dem_dat$education, levels = c(1:8, 99),
+         labels = c("Elementary School", "Junior High", "High School", "Some College",
+                    "Associate's Degree", "Bachelor's Degree", "Master's Degree",
+                    "Doctorate/ PhD", "Prefer not to answer"))
+
+# ---------------------------------------------------------------------------- #
+# Save cleaned data ----
+# ---------------------------------------------------------------------------- #
+
+save(dem_dat, file = "./data/further_clean/dem_dat.RData")
+
+# ---------------------------------------------------------------------------- #
+# Create demographics table ----
+# ---------------------------------------------------------------------------- #
+
+# TODO: Define function to compute descriptives
+# (see https://github.com/jwe4ec/fy7e6/blob/develop/code/04_further_clean_demog_data_create_tables.R)
+
 
 
 
