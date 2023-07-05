@@ -41,6 +41,8 @@ mdib_hd_dat <- read.csv("./data/bot_cleaned/final HD Aim 1 data_deid_2023-01-09_
 # ---------------------------------------------------------------------------- #
 
 # For rows where "record_id" is NA, all columns are NA or "". Remove such rows.
+# Note: These no longer appear; perhaps due to update to R (vs. R 4.2.2 used in 
+# prior script at https://github.com/jwe4ec/ncats-r03)
 
 sum(is.na(mdib_hd_dat$record_id)) == 237
 
@@ -50,12 +52,12 @@ sum(!(is.na(mdib_hd_dat[is.na(mdib_hd_dat$record_id), ]) |
 mdib_hd_dat <- mdib_hd_dat[!is.na(mdib_hd_dat$record_id), ]
 
 # ---------------------------------------------------------------------------- #
-# Remove participants who never started surveys ----
+# Remove participants ----
 # ---------------------------------------------------------------------------- #
 
 # Per Jessie Gibson, 7 participants consented to participate but never started 
 # the surveys. These participants have values of NA, 0, or "" for all columns at 
-# baseline. Remove these participants, leaving 73 (but see more exclusions below).
+# baseline. Remove these participants.
 
 target_cols <- names(mdib_hd_dat)[!(names(mdib_hd_dat) %in% c("record_id", "redcap_event_name"))]
 
@@ -70,7 +72,14 @@ nrow(mdib_hd_dat[row_never_started, ]) == 7
 
 mdib_hd_dat <- mdib_hd_dat[!row_never_started, ]
 
-length(unique(mdib_hd_dat$record_id)) == 73
+# Per Jessie Gibson on 7/5/2023, remove 3 participants who should have been removed 
+# as part of bot cleaning, leaving 70 participants (but see further exclusions below)
+
+exclude_ids <- c(23, 738, 814)
+
+mdib_hd_dat <- mdib_hd_dat[!(mdib_hd_dat$record_id %in% exclude_ids), ]
+
+length(unique(mdib_hd_dat$record_id)) == 70
 
 # ---------------------------------------------------------------------------- #
 # Define scale items ----
@@ -279,7 +288,7 @@ all(range(mdib_hd_dat[, mdib_dat_items$bfne2], na.rm = TRUE) == c(0, 4))
 # ---------------------------------------------------------------------------- #
 
 # Remove 5 participants with incomplete MDIB data at baseline, leaving an overall 
-# analysis sample of 68
+# analysis sample of 65 participants
 
 mdib_items <- c(mdib_dat_items$mdib_neg, mdib_dat_items$mdib_ben)
 
@@ -290,7 +299,7 @@ length(incompl_mdib_bl_data_ids) == 5
 
 mdib_hd_dat <- mdib_hd_dat[!(mdib_hd_dat$record_id %in% incompl_mdib_bl_data_ids), ]
 
-length(unique(mdib_hd_dat$record_id)) == 68
+length(unique(mdib_hd_dat$record_id)) == 65
 
 # ---------------------------------------------------------------------------- #
 # Export data ----
