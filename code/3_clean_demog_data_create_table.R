@@ -58,21 +58,12 @@ dem_cols <- c("age", paste0("race___", c(1:5, 9, 99)), "race_other", "ethnicity"
 dem_dat <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1", 
                        c(index_cols, dem_cols)]
 
-# Clean age
+# Clean age (already computed from "date_of_birth" and "date")
 
-  # Note: No participants entered "99"
+  # Note: No values are missing, and range is reasonable
 
-sum(dem_dat$age == 99, na.rm = TRUE) == 0
-
-  # TODO (Was this how pna was coded for age? Note that data dictionary says
-  # age was computed from "date_of_birth". Did they choose pna for that?): 
-  # Participant 814 has value of 0
-
-dem_dat$record_id[!is.na(dem_dat$age) & dem_dat$age == 0] == 814
-# View(mdib_hd_dat[mdib_hd_dat$record_id == 814, ])
-
-
-
+sum(is.na(dem_dat$age)) == 0
+range(dem_dat$age) == c(21, 73)
 
 # Clean race
 
@@ -164,9 +155,10 @@ dem_dat$education <-
 
 # Clean CAG repeats
 
-  # Recode variations of unknown
+  # Recode variations of unknown (include "N/A" here, which per Jessie Gibson on
+  # 7/5/2023 likely indicates the participant has not had genetic testing)
 
-unknown <- c("Don't know", "I don't know it offhand", "Unknown ")
+unknown <- c("Don't know", "I don't know it offhand", "Unknown ", "N/A")
 
 dem_dat$cag_repeats[dem_dat$cag_repeats %in% unknown] <- "Unknown"
 
@@ -175,21 +167,12 @@ dem_dat$cag_repeats[dem_dat$cag_repeats %in% unknown] <- "Unknown"
 dem_dat$cag_repeats[dem_dat$cag_repeats == '"about 40"']   <- 40
 dem_dat$cag_repeats[dem_dat$cag_repeats == "47 CAG"]       <- 47
 
-  # TODO (why would it be not applicable to them?): Recode not applicable
+  # Identify any values not in [35, 60]
 
-dem_dat$cag_repeats[dem_dat$cag_repeats == "N/A"] <- "Not applicable"
+outlying_ids <- dem_dat$record_id[dem_dat$cag_repeats != "Unknown" &
+                                    (dem_dat$cag_repeats < 35 | dem_dat$cag_repeats > 60)]
 
-
-
-
-
-  # TODO (ask Jessie about these): Identify values not in [35, 60]
-
-outlying_ids <- dem_dat$record_id[dem_dat$cag_repeats < 35 | dem_dat$cag_repeats > 60]
-# View(dem_dat[dem_dat$record_id %in% outlying_ids, c("record_id", "cag_repeats")])
-
-
-
+length(outlying_ids) == 0
 
   # Create variable containing only numeric responses (with all others NA)
 
@@ -246,14 +229,19 @@ dem_dat$study_awareness <-
 
 # Clean survey help (though we will not include it in formatted table)
 
-dem_dat$survey_help <-
-  factor(dem_dat$survey_help, levels = c(0:1, 99),
-         labels = c("No", "Yes", "Prefer not to answer"))
-
-  # Note: There are 26 values of NA for participants with "record_ids" < 92
-  # (maybe item wasn't administered before that)
+  # Note: There are 25 values of NA for participants with "record_ids" < 92. Per
+  # Jessie Gibson on 7/5/2023, the item was added partway through data collection.
+  # Add a level "Not assessed" for NAs.
 
 all(dem_dat$record_id[!is.na(dem_dat$survey_help)]) < 92
+
+dem_dat$survey_help[is.na(dem_dat$survey_help)] <- "Not assessed"
+
+  # Create factor
+
+dem_dat$survey_help <-
+  factor(dem_dat$survey_help, levels = c(0:1, 99, "Not assessed"),
+         labels = c("No", "Yes", "Prefer not to answer", "Not assessed"))
 
 # ---------------------------------------------------------------------------- #
 # Save cleaned data ----
@@ -267,7 +255,7 @@ save(dem_dat, file = "./data/further_clean/dem_dat.RData")
 
 # Define function to compute descriptives
 
-compute_desc <- function(df) {
+compute_desc <- function(df, exclude_fct_cols) {
   # Compute sample size
   
   n <- data.frame(label = "n",
@@ -277,7 +265,7 @@ compute_desc <- function(df) {
   
   vars <- c("age", "cag_repeats_numeric")
   var_labels <- c("Age", "CAG Repeats")
-  unit_labels <- c("Years: M (SD)", "M (SD)")
+  unit_labels <- c("Years: M (SD)", "Number of repeats: M (SD)")
   
   num_res <- data.frame()
   
@@ -294,31 +282,31 @@ compute_desc <- function(df) {
     num_res <- rbind(num_res, tmp_res)
   }
   
-  # TODO (ask Jessie about such values first): Compute count and percentage "Not 
-  # applicable" or "Unknown" for "cag_repeats"
+  # Compute count and percentage "Unknown" for "cag_repeats"
   
-  num_res_pna <- data.frame(label = "Prefer not to answer: n (%)",
-                            value = paste0(sum(is.na(df$age)),
+  num_res_unk <- data.frame(label = "Unknown: n (%)",
+                            value = paste0(sum(df$cag_repeats == "Unknown"),
                                            " (",
-                                           format(round(sum(is.na(df$age))/length(df$age), 1),
+                                           format(round(sum(df$cag_repeats == "Unknown")/length(df$cag_repeats), 1),
                                                   nsmall = 1, trim = TRUE),
                                            ")"))
-  
-  
-  
-  
   
   # Compute count and percentage for factor variables
   
   vars <- c("gender", "sex", "race_coll", "ethnicity", "education", "employment_status", 
-            "relationship_status", "live_alone", "cag_repeats",
+            "relationship_status", "live_alone",
             "country", "study_awareness", "survey_help")
   var_labels <- paste0(c("Gender", "Sex Assigned at Birth", "Race", "Ethnicity", 
                          "Education", "Employment Status", "Relationship Status", 
-                         "Living Alone", "CAG Repeats", "Country",
+                         "Living Alone", "Country",
                          "Where did you hear about this survey study?",
                          "Did anyone help you complete these surveys?"),
                        ": n (%)")
+  
+  retain_idx <- which(!(vars %in% exclude_fct_cols))
+  
+  vars <- vars[retain_idx]
+  var_labels <- var_labels[retain_idx]
   
   fct_res <- data.frame()
   
@@ -339,14 +327,17 @@ compute_desc <- function(df) {
   
   # Combine results
   
-  res <- rbind(n, num_res, num_res_pna, fct_res)
+  res <- rbind(n, num_res, num_res_unk, fct_res)
   
   return(res)
 }
 
 # Run function
 
-dem_tbl <- compute_desc(dem_dat)
+exclude_fct_cols <- c("country", "study_awareness", "survey_help")
+
+dem_tbl     <- compute_desc(dem_dat, exclude_fct_cols)
+dem_tbl_ext <- compute_desc(dem_dat, NULL)
 
 # Save table to CSV
 
@@ -354,7 +345,8 @@ dem_path <- "./results/demographics/"
 
 dir.create(dem_path, recursive = TRUE)
 
-write.csv(dem_tbl, paste0(dem_path, "dem_tbl.csv"), row.names = FALSE)
+write.csv(dem_tbl,     paste0(dem_path, "dem_tbl.csv"),          row.names = FALSE)
+write.csv(dem_tbl_ext, paste0(dem_path, "dem_tbl_extended.csv"), row.names = FALSE)
 
 # ---------------------------------------------------------------------------- #
 # Format demographics table ----
@@ -390,9 +382,7 @@ format_dem_tbl <- function(dem_tbl, gen_note, title) {
   # Define columns
   
   left_align_body_cols <- "label_md"
-  
-  exclude_cols <- c("label", "country")
-  target_cols <- names(dem_tbl)[!(names(dem_tbl) %in% exclude_cols)]
+  target_cols <- names(dem_tbl)[!(names(dem_tbl) %in% "label")]
   
   # Create flextable
   
@@ -425,13 +415,9 @@ format_dem_tbl <- function(dem_tbl, gen_note, title) {
     autofit()
 }
 
-# TODO: Define general notes
+# Define general notes
 
-gen_note <- as_paragraph_md("*Note.* INSERT")
-
-
-
-
+gen_note <- as_paragraph_md("")
 
 # Run function
 
