@@ -46,7 +46,8 @@ load("./data/further_clean/mdib_hd_dat.RData")
 # Clean demographic data ----
 # ---------------------------------------------------------------------------- #
 
-# Restrict to demographic columns of interest at baseline
+# Extract demographic columns of interest at baseline and remove from overall 
+# dataset so that demographics are stored only in separate dataset
 
 index_cols <- c("record_id", "redcap_event_name")
 
@@ -57,6 +58,10 @@ dem_cols <- c("age", paste0("race___", c(1:5, 9, 99)), "race_other", "ethnicity"
 
 dem_dat <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1", 
                        c(index_cols, dem_cols)]
+
+mdib_hd_dat2 <- mdib_hd_dat[, !(names(mdib_hd_dat) %in% dem_cols)]
+
+save(mdib_hd_dat2, file = "./data/further_clean/mdib_hd_dat2.RData")
 
 # Clean age (already computed from "date_of_birth" and "date")
 
