@@ -174,15 +174,15 @@ fit_geomin  <- efa(data = mdib_bl, nfactors = 2:5, rotation = "geomin",  estimat
 fit_promax  <- efa(data = mdib_bl, nfactors = 2:5, rotation = "promax",  estimator = "MLM")
 
 sink(paste0(efa_path, "oblimin_mlm.txt"))
-summary(fit_oblimin, se = TRUE, zstat = TRUE, pvalue = TRUE)
+summary(fit_oblimin)
 sink()
 
 sink(paste0(efa_path, "geomin_mlm.txt"))
-summary(fit_geomin,  se = TRUE, zstat = TRUE, pvalue = TRUE)
+summary(fit_geomin)
 sink()
 
 sink(paste0(efa_path, "promax_mlm.txt"))
-summary(fit_promax,  se = TRUE, zstat = TRUE, pvalue = TRUE)
+summary(fit_promax)
 sink()
 
 sink(paste0(efa_path, "oblimin_mlm_detail.txt"))
@@ -196,10 +196,6 @@ sink()
 sink(paste0(efa_path, "promax_mlm_detail.txt"))
 summary(fit_promax,  se = TRUE, zstat = TRUE, pvalue = TRUE)
 sink()
-
-
-
-
 
 # TODO: For reference on EMA, see "twincogFA.R" and "PHysCompFA.R" from 11/4/2019
 # multivariate class with Steve Boker
