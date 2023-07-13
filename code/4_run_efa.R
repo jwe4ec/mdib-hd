@@ -122,11 +122,12 @@ eigen(cor(mdib_bl))$values
 # Plot eigenvalues as scree plot to help decide how many factors to retain, which
 # shows an unclear break point between cliff and scree
 
-efa_path <- "./results/efa/"
+efa_path   <- "./results/efa/"
+scree_path <- paste0(efa_path, "scree/")
 
-dir.create(efa_path)
+dir.create(scree_path, recursive = TRUE)
 
-pdf(paste0(efa_path, "mdib_bl_scree.pdf"), height = 6, width = 6)
+pdf(paste0(scree_path, "mdib_bl_scree.pdf"), height = 6, width = 6)
 scree(mdib_bl, factors = FALSE, pc = TRUE)
 dev.off()
 
@@ -140,7 +141,7 @@ dev.off()
 # a "quant" argument of .95, meaning the 95% CI is used as the threshold rather 
 # than the mean, in contrast to the documentation, which needs to be fixed.)
 
-pdf(paste0(efa_path, "mdib_bl_scree_pa.pdf"), height = 6, width = 6)
+pdf(paste0(scree_path, "mdib_bl_scree_pa.pdf"), height = 6, width = 6)
 (result <- fa.parallel(mdib_bl, fm = "ml", n.iter = 100))
 dev.off()
 
@@ -159,26 +160,50 @@ sum(result$pc.values > result$pc.simr) == 4
 
 # TODO: estimator "MLM" gives warnings re nonpositive definite for "oblimin" and "geomin".
 # Adding "check.vcov = FALSE" (see http://127.0.0.1:26718/library/lavaan/html/lavOptions.html) 
-# removes the warnings.
+# or changing the estimator to "ML" removes the warnings.
+
+fit_oblimin <- efa(data = mdib_bl, nfactors = 2:5, rotation = "oblimin", estimator = "MLM")
+fit_geomin  <- efa(data = mdib_bl, nfactors = 2:5, rotation = "geomin",  estimator = "MLM")
 
 
 
 
+
+fit_oblimin <- efa(data = mdib_bl, nfactors = 2:5, rotation = "oblimin", estimator = "MLM", check.vcov = FALSE)
+fit_geomin  <- efa(data = mdib_bl, nfactors = 2:5, rotation = "geomin",  estimator = "MLM", check.vcov = FALSE)
+fit_promax  <- efa(data = mdib_bl, nfactors = 2:5, rotation = "promax",  estimator = "MLM")
 
 sink(paste0(efa_path, "oblimin_mlm.txt"))
-fit_oblimin <- efa(data = mdib_bl, nfactors = 2:5, rotation = "oblimin", estimator = "MLM", check.vcov = FALSE)
-summary(fit_oblimin)
+summary(fit_oblimin, se = TRUE, zstat = TRUE, pvalue = TRUE)
 sink()
 
 sink(paste0(efa_path, "geomin_mlm.txt"))
-fit_geomin <- efa(data = mdib_bl, nfactors = 2:5, rotation = "geomin", estimator = "MLM", check.vcov = FALSE)
-summary(fit_geomin)
+summary(fit_geomin,  se = TRUE, zstat = TRUE, pvalue = TRUE)
 sink()
 
 sink(paste0(efa_path, "promax_mlm.txt"))
-fit_promax <- efa(data = mdib_bl, nfactors = 2:5, rotation = "promax", estimator = "MLM")
-summary(fit_promax)
+summary(fit_promax,  se = TRUE, zstat = TRUE, pvalue = TRUE)
 sink()
+
+sink(paste0(efa_path, "oblimin_mlm_detail.txt"))
+summary(fit_oblimin, se = TRUE, zstat = TRUE, pvalue = TRUE)
+sink()
+
+sink(paste0(efa_path, "geomin_mlm_detail.txt"))
+summary(fit_geomin,  se = TRUE, zstat = TRUE, pvalue = TRUE)
+sink()
+
+sink(paste0(efa_path, "promax_mlm_detail.txt"))
+summary(fit_promax,  se = TRUE, zstat = TRUE, pvalue = TRUE)
+sink()
+
+
+
+
 
 # TODO: For reference on EMA, see "twincogFA.R" and "PHysCompFA.R" from 11/4/2019
 # multivariate class with Steve Boker
+
+
+
+
