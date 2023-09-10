@@ -160,18 +160,17 @@ sum(result$pc.values > result$pc.simr) == 4
 
 # Note: Random seed must be set for each analysis for reproducible results
 
-# TODO: estimator "MLM" gives warnings re nonpositive definite for "oblimin" and "geomin".
-# Adding "check.vcov = FALSE" (see http://127.0.0.1:26718/library/lavaan/html/lavOptions.html) 
-# or changing the estimator to "ML" removes the warnings.
-
-set.seed(1234)
-fit_oblimin <- efa(data = mdib_bl, nfactors = 2:5, rotation = "oblimin", estimator = "MLM")
-set.seed(1234)
-fit_geomin  <- efa(data = mdib_bl, nfactors = 2:5, rotation = "geomin",  estimator = "MLM")
-
-
-
-
+# Note: Estimator "MLM" gives two warnings per number of factors about the smallest
+# eigenvalue being negative:
+#   "The variance-covariance matrix of the estimated parameters (vcov) does not 
+#   appear to be positive definite! The smallest eigenvalue (= -8.822709e-16) 
+#   is smaller than zero. This may be a symptom that the model is not identified."
+# However, the smallest eigenvalue across all warnings is -3.986146e-13, which is
+# just barely negative and may simply be due to a machine precision issue (see
+# https://groups.google.com/g/lavaan/c/4y5pmqRz4nk/m/PXSq9VEdBwAJ). Adding 
+# "check.vcov = FALSE" (see http://127.0.0.1:26718/library/lavaan/html/lavOptions.html) 
+# removes the warnings, as does changing the estimator to "ML" (suggesting that
+# the issue is tied to the robust standard errors and test statistic of "MLM").
 
 set.seed(1234)
 fit_oblimin <- efa(data = mdib_bl, nfactors = 2:5, rotation = "oblimin", estimator = "MLM", check.vcov = FALSE)
