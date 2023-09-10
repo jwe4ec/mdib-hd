@@ -158,19 +158,26 @@ sum(result$pc.values > result$pc.simr) == 4
 # suggests a smaller number (up to 4, though looking at +/- 1 is recommended; Lim 
 # & Jahng, 2019). Thus, consider 2, 3, 4, or 5.
 
+# Note: Random seed must be set for each analysis for reproducible results
+
 # TODO: estimator "MLM" gives warnings re nonpositive definite for "oblimin" and "geomin".
 # Adding "check.vcov = FALSE" (see http://127.0.0.1:26718/library/lavaan/html/lavOptions.html) 
 # or changing the estimator to "ML" removes the warnings.
 
+set.seed(1234)
 fit_oblimin <- efa(data = mdib_bl, nfactors = 2:5, rotation = "oblimin", estimator = "MLM")
+set.seed(1234)
 fit_geomin  <- efa(data = mdib_bl, nfactors = 2:5, rotation = "geomin",  estimator = "MLM")
 
 
 
 
 
+set.seed(1234)
 fit_oblimin <- efa(data = mdib_bl, nfactors = 2:5, rotation = "oblimin", estimator = "MLM", check.vcov = FALSE)
+set.seed(1234)
 fit_geomin  <- efa(data = mdib_bl, nfactors = 2:5, rotation = "geomin",  estimator = "MLM", check.vcov = FALSE)
+set.seed(1234)
 fit_promax  <- efa(data = mdib_bl, nfactors = 2:5, rotation = "promax",  estimator = "MLM")
 
 sink(paste0(efa_path, "oblimin_mlm.txt"))
