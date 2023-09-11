@@ -112,7 +112,43 @@ mdib <- mdib[order(mdib$meaning, mdib$domain), ]
 mdib_bl <- mdib_bl[match(mdib$items_rename, names(mdib_bl))]
 
 # ---------------------------------------------------------------------------- #
-# Inspect scree plot ----
+# Inspect item distributions ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to plot histograms for six items at a time
+
+plot_item_hists <- function(df, cols) {
+  par(mfrow = c(3, 2))
+  
+  for (i in cols) {
+    col_name <- names(df[i])
+    hist(df[, i], main = col_name, xlab = "")
+  }
+}
+
+# Run function and export plots to PDF
+
+efa_path   <- "./results/efa/"
+
+hists_path <- paste0(efa_path, "hists/")
+
+dir.create(hists_path, recursive = TRUE)
+
+pdf(paste0(hists_path, "mdib_bl_hists.pdf"), height = 6, width = 6)
+plot_item_hists(mdib_bl, 1:6)
+plot_item_hists(mdib_bl, 7:12)
+plot_item_hists(mdib_bl, 13:18)
+plot_item_hists(mdib_bl, 19:24)
+plot_item_hists(mdib_bl, 25:30)
+plot_item_hists(mdib_bl, 31:36)
+dev.off()
+
+# Note: Some item distributions are heavily skewed, especially for negative items.
+# Thus, use WLSMV estimation in addition to ML estimation with Sattora-Bentler
+# scaling (see Finney & DiStefano, 2013, p. 476; Rosellini & Brown, 2021, p. 64).
+
+# ---------------------------------------------------------------------------- #
+# Inspect scree plot based on all items ----
 # ---------------------------------------------------------------------------- #
 
 # Obtain eigenvalues of correlation matrix
@@ -122,7 +158,6 @@ eigen(cor(mdib_bl))$values
 # Plot eigenvalues as scree plot to help decide how many factors to retain, which
 # shows an unclear break point between cliff and scree
 
-efa_path   <- "./results/efa/"
 scree_path <- paste0(efa_path, "scree/")
 
 dir.create(scree_path, recursive = TRUE)
@@ -135,11 +170,11 @@ dev.off()
 # Montoya & Edwards, 2021, p. 416) of 4 factors (based on principal axis factoring;
 # "PA-PAF-m" in Lim & Jahng, 2019) or 4 components (based on principal component 
 # analysis; "PA-PCA-m"). Lim and Jahng (2019) found that PA-PCA-m is better across 
-# a wide variety of situations and recommend that. (Note that "ncomp" suggests 
-# 2 components, whereas the eigenvalues of 4 components actually exceed the mean. 
-# William Revelle confirmed via email on 7/13/2023 that "fa.parallel" defaults to 
-# a "quant" argument of .95, meaning the 95% CI is used as the threshold rather 
-# than the mean, in contrast to the documentation, which needs to be fixed.)
+# a wide variety of situations (inc. ordinal data) and recommend that. (Note that 
+# "ncomp" suggests 2 components, whereas the eigenvalues of 4 components actually 
+# exceed the mean. William Revelle confirmed via email on 7/13/2023 that "fa.parallel"
+# defaults to a "quant" argument of .95, meaning the 95% CI is used as the threshold 
+# rather than the mean, in contrast to the documentation, which needs to be fixed.)
 
 pdf(paste0(scree_path, "mdib_bl_scree_pa.pdf"), height = 6, width = 6)
 (result <- fa.parallel(mdib_bl, fm = "ml", n.iter = 100))
@@ -150,8 +185,22 @@ result$ncomp == 2
 sum(result$pc.values > result$pc.sim)  == 4
 sum(result$pc.values > result$pc.simr) == 4
 
+# TODO (contact William Revelle about error/warnings, which occur even when the
+# "fm" and "n.iter" arguments are removed, leaving the defaults--also unsure what
+# "fm" method to use in this case given that it seems "WLSMV" is not available): 
+# Also do parallel analysis of polychoric correlations (given some heavily skewed 
+# items--see above)
+
+pdf(paste0(scree_path, "mdib_bl_scree_pa_poly.pdf"), height = 6, width = 6)
+(result <- fa.parallel(mdib_bl, fm = "ml", n.iter = 100, cor = "poly"))
+dev.off()
+
+
+
+
+
 # ---------------------------------------------------------------------------- #
-# Run EFA ----
+# Run EFA based on all items ----
 # ---------------------------------------------------------------------------- #
 
 # Based on scree plot, considered retaining 2 to 9 factors, but parallel analysis 
@@ -223,6 +272,22 @@ sink()
 
 # TODO: For reference on EMA, see "twincogFA.R" and "PHysCompFA.R" from 11/4/2019
 # multivariate class with Steve Boker
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
+# TODO: Consider running EFA based on all items using WLSMV estimator ----
+# ---------------------------------------------------------------------------- #
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
+# TODO: Consider running EFA based on only theorized negative bias items ----
+# ---------------------------------------------------------------------------- #
 
 
 
