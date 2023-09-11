@@ -179,6 +179,8 @@ fit_geomin  <- efa(data = mdib_bl, nfactors = 2:5, rotation = "geomin",  estimat
 set.seed(1234)
 fit_promax  <- efa(data = mdib_bl, nfactors = 2:5, rotation = "promax",  estimator = "MLM")
 
+# Export basics to TXT
+
 sink(paste0(efa_path, "oblimin_mlm.txt"))
 summary(fit_oblimin)
 sink()
@@ -191,6 +193,8 @@ sink(paste0(efa_path, "promax_mlm.txt"))
 summary(fit_promax)
 sink()
 
+# Export details to TXT
+
 sink(paste0(efa_path, "oblimin_mlm_detail.txt"))
 summary(fit_oblimin, se = TRUE, zstat = TRUE, pvalue = TRUE)
 sink()
@@ -201,6 +205,20 @@ sink()
 
 sink(paste0(efa_path, "promax_mlm_detail.txt"))
 summary(fit_promax,  se = TRUE, zstat = TRUE, pvalue = TRUE)
+sink()
+
+# Export loadings to CSV
+
+sink(paste0(efa_path, "oblimin_mlm.csv"))
+fit_oblimin$loadings
+sink()
+
+sink(paste0(efa_path, "geomin_mlm.csv"))
+fit_geomin$loadings
+sink()
+
+sink(paste0(efa_path, "promax_mlm.csv"))
+fit_promax$loadings
 sink()
 
 # TODO: For reference on EMA, see "twincogFA.R" and "PHysCompFA.R" from 11/4/2019
