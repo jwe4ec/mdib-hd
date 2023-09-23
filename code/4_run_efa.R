@@ -10,6 +10,13 @@
 # Before running script, restart R (CTRL+SHIFT+F10 on Windows) and set working 
 # directory to parent folder
 
+# TODO: For reference on EMA, see "twincogFA.R" and "PHysCompFA.R" from 11/4/2019
+# multivariate class with Steve Boker
+
+
+
+
+
 # ---------------------------------------------------------------------------- #
 # Store working directory, check correct R version, load packages ----
 # ---------------------------------------------------------------------------- #
@@ -269,13 +276,6 @@ export_res(fit_oblimin_mlm, all_items_path, "oblimin_mlm")
 export_res(fit_geomin_mlm,  all_items_path, "geomin_mlm")
 export_res(fit_promax_mlm,  all_items_path, "promax_mlm")
 
-# TODO: For reference on EMA, see "twincogFA.R" and "PHysCompFA.R" from 11/4/2019
-# multivariate class with Steve Boker
-
-
-
-
-
 # ---------------------------------------------------------------------------- #
 # Run EFA based on all items using WLSMV estimator ----
 # ---------------------------------------------------------------------------- #
@@ -396,18 +396,61 @@ sum(result_poly_minres$pc.values > result_poly_minres$pc.simr) == 1
 # Run EFA based on only negative bias items using "MLM" estimator ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Based on scree plot, considered retaining 1 to 3 factors, but parallel analysis 
+# Based on scree plot, considered retaining 1 to 3 factors, but parallel analysis 
 # suggests a smaller number (up to 1, though looking at +/- 1 is recommended; Lim 
 # & Jahng, 2019). Thus, consider 1 or 2.
 
+# Note: No warnings
 
+set.seed(1234)
+fit_oblimin_mlm <- efa(data = mdib_bl_neg, nfactors = 1:2, rotation = "oblimin", 
+                       estimator = "MLM")
+set.seed(1234)
+fit_geomin_mlm  <- efa(data = mdib_bl_neg, nfactors = 1:2, rotation = "geomin",  
+                       estimator = "MLM")
+set.seed(1234)
+fit_promax_mlm  <- efa(data = mdib_bl_neg, nfactors = 1:2, rotation = "promax",  
+                       estimator = "MLM")
 
+# Export basic results and details to TXT and loadings to CSV
 
+export_res(fit_oblimin_mlm, neg_items_path, "oblimin_mlm")
+export_res(fit_geomin_mlm,  neg_items_path, "geomin_mlm")
+export_res(fit_promax_mlm,  neg_items_path, "promax_mlm")
 
 # ---------------------------------------------------------------------------- #
-# TODO: Run EFA based on only negative bias items using "WSLMV" estimator ----
+# Run EFA based on only negative bias items using "WSLMV" estimator ----
 # ---------------------------------------------------------------------------- #
 
+# Convert columns to ordered factors
 
+mdib_bl_neg_ord <- as.data.frame(lapply(mdib_bl_neg, factor, levels = 0:4, ordered = TRUE))
 
+# Consider 1 or 2 factors, as determined above
 
+# Note: For oblimin and geomin, estimator "WLSMV" gives two warnings per number of 
+# factors about the smallest eigenvalue being negative:
+#   "The variance-covariance matrix of the estimated parameters (vcov) does not 
+#   appear to be positive definite! The smallest eigenvalue (= -3.394061e-18) is 
+#   smaller than zero. This may be a symptom that the model is not identified."
+# However, the smallest eigenvalue across all warnings is -4.639708e-16, which is
+# just barely negative and may simply be due to a machine precision issue (see
+# above). Adding "check.vcov = FALSE" (see above) removes the warnings.
+
+# Note: No Heywood cases
+
+set.seed(1234)
+fit_oblimin_wlsmv <- efa(data = mdib_bl_neg_ord, nfactors = 1:2, rotation = "oblimin", 
+                         estimator = "WLSMV", check.vcov = FALSE)
+set.seed(1234)
+fit_geomin_wlsmv  <- efa(data = mdib_bl_neg_ord, nfactors = 1:2, rotation = "geomin",  
+                         estimator = "WLSMV", check.vcov = FALSE)
+set.seed(1234)
+fit_promax_wlsmv  <- efa(data = mdib_bl_neg_ord, nfactors = 1:2, rotation = "promax",  
+                         estimator = "WLSMV")
+
+# Export basic results and details to TXT and loadings to CSV
+
+export_res(fit_oblimin_wlsmv, neg_items_path, "oblimin_wlsmv")
+export_res(fit_geomin_wlsmv,  neg_items_path, "geomin_wlsmv")
+export_res(fit_promax_wlsmv,  neg_items_path, "promax_wlsmv")
