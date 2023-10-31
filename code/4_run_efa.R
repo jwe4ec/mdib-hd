@@ -742,3 +742,131 @@ fit_promax_wlsmv  <- efa(data = mdib_bl_neg_10_ord, nfactors = 1:2, rotation = "
 export_res(fit_oblimin_wlsmv, neg_items_10_path, "oblimin_wlsmv")
 export_res(fit_geomin_wlsmv,  neg_items_10_path, "geomin_wlsmv")
 export_res(fit_promax_wlsmv,  neg_items_10_path, "promax_wlsmv")
+
+# ---------------------------------------------------------------------------- #
+# Inspect scree plot based on 9 reduced negative bias items ----
+# ---------------------------------------------------------------------------- #
+
+# From 10 theorized negative bias items, consider excluding item theorized to be 
+# an internal item ("mdib_neg_int_email_6b") but that has moderate cross-loading
+# with external items
+
+mdib_bl_neg_9 <- mdib_bl_neg_10[, names(mdib_bl_neg_10)[names(mdib_bl_neg_10) !=
+                                                          "mdib_neg_int_email_6b"]]
+
+length(mdib_bl_neg_9) == 9
+
+# Obtain eigenvalues of correlation matrix
+
+eigen(cor(mdib_bl_neg_9))$values
+
+# Plot eigenvalues as scree plot to help decide how many factors to retain, which
+# shows an unclear break point between cliff and scree
+
+neg_items_9_path <- paste0(efa_path,         "neg_items_09/")
+scree_path       <- paste0(neg_items_9_path, "scree/")
+
+dir.create(scree_path, recursive = TRUE)
+
+pdf(paste0(scree_path, "mdib_bl_scree.pdf"), height = 6, width = 6)
+scree(mdib_bl_neg_9, factors = FALSE, pc = TRUE)
+dev.off()
+
+# Given this, also consider parallel analysis, which suggests an upper bound of 
+# 1 component (see above)
+
+pdf(paste0(scree_path, "mdib_bl_scree_pa_ml.pdf"), height = 6, width = 6)
+(result_ml <- fa.parallel(mdib_bl_neg_9, fm = "ml", n.iter = 100))
+dev.off()
+
+result_ml$ncomp == 1
+
+sum(result_ml$pc.values > result_ml$pc.sim) == 2
+sum(result_ml$pc.values > result_ml$pc.simr) == 1
+
+# Also do parallel analysis of polychoric correlations (see above)
+
+# One kind of warning as above for "ML":
+# In polychoric(sampledata, correct = correct) :
+#   The items do not have an equal number of response alternatives, global set to FALSE.
+
+pdf(paste0(scree_path, "mdib_bl_scree_pa_poly_ml.pdf"), height = 6, width = 6)
+(result_poly_ml <- fa.parallel(mdib_bl_neg_9, fm = "ml", n.iter = 10, correct = 0, cor = "poly"))
+dev.off()
+
+result_poly_ml$ncomp == 1
+
+sum(result_poly_ml$pc.values > result_poly_ml$pc.sim)  == 1
+sum(result_poly_ml$pc.values > result_poly_ml$pc.simr) == 1
+
+# Similar warnings (three kinds) as above for "minres":
+# In polychoric(sampledata, correct = correct) :
+#   The items do not have an equal number of response alternatives, global set to FALSE.
+# In fa.stats(r = r, f = f, phi = phi, n.obs = n.obs, np.obs = np.obs,  ... :
+#   The estimated weights for the factor scores are probably incorrect. Try a different
+#   factor score estimation method.
+# In fac(r = r, nfactors = nfactors, n.obs = n.obs, rotate = rotate,  ... :
+#   An ultra-Heywood case was detected.  Examine the results carefully
+
+pdf(paste0(scree_path, "mdib_bl_scree_pa_poly_minres.pdf"), height = 6, width = 6)
+(result_poly_minres <- fa.parallel(mdib_bl_neg_9, correct = 0, cor = "poly"))
+dev.off()
+
+result_poly_minres$ncomp == 1
+
+sum(result_poly_minres$pc.values > result_poly_minres$pc.sim)  == 1
+sum(result_poly_minres$pc.values > result_poly_minres$pc.simr) == 1
+
+# ---------------------------------------------------------------------------- #
+# Run EFA based on 9 reduced negative bias items using "MLM" estimator ----
+# ---------------------------------------------------------------------------- #
+
+# Based on scree plot, considered retaining 1 to 3 factors, but parallel analysis 
+# suggests a smaller number (up to 1, though looking at +/- 1 is recommended; Lim 
+# & Jahng, 2019). Thus, consider 1 or 2.
+
+# Note: No warnings or Heywood cases
+
+set.seed(1234)
+fit_oblimin_mlm <- efa(data = mdib_bl_neg_9, nfactors = 1:2, rotation = "oblimin", 
+                       estimator = "MLM")
+set.seed(1234)
+fit_geomin_mlm  <- efa(data = mdib_bl_neg_9, nfactors = 1:2, rotation = "geomin",  
+                       estimator = "MLM")
+set.seed(1234)
+fit_promax_mlm  <- efa(data = mdib_bl_neg_9, nfactors = 1:2, rotation = "promax",  
+                       estimator = "MLM")
+
+# Export basic results and details to TXT and loadings to CSV
+
+export_res(fit_oblimin_mlm, neg_items_9_path, "oblimin_mlm")
+export_res(fit_geomin_mlm,  neg_items_9_path, "geomin_mlm")
+export_res(fit_promax_mlm,  neg_items_9_path, "promax_mlm")
+
+# ---------------------------------------------------------------------------- #
+# Run EFA based on 9 reduced negative bias items using "WLSMV" estimator ----
+# ---------------------------------------------------------------------------- #
+
+# Convert columns to ordered factors
+
+mdib_bl_neg_9_ord <- as.data.frame(lapply(mdib_bl_neg_9, factor, levels = 0:4, ordered = TRUE))
+
+# Consider 1 or 2 factors, as determined above
+
+# Note: No warnings or Heywood cases
+
+set.seed(1234)
+fit_oblimin_wlsmv <- efa(data = mdib_bl_neg_9_ord, nfactors = 1:2, rotation = "oblimin", 
+                         estimator = "WLSMV")
+set.seed(1234)
+fit_geomin_wlsmv  <- efa(data = mdib_bl_neg_9_ord, nfactors = 1:2, rotation = "geomin",  
+                         estimator = "WLSMV")
+set.seed(1234)
+fit_promax_wlsmv  <- efa(data = mdib_bl_neg_9_ord, nfactors = 1:2, rotation = "promax",  
+                         estimator = "WLSMV")
+
+# Export basic results and details to TXT and loadings to CSV
+
+export_res(fit_oblimin_wlsmv, neg_items_9_path, "oblimin_wlsmv")
+export_res(fit_geomin_wlsmv,  neg_items_9_path, "geomin_wlsmv")
+export_res(fit_promax_wlsmv,  neg_items_9_path, "promax_wlsmv")
