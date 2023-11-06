@@ -46,9 +46,9 @@ set.seed(1234)
 # Define functions used in script ----
 # ---------------------------------------------------------------------------- #
 
-# Define function to export basic results and details to TXT and loadings to CSV
+# Define function to export basic EFA results and details to TXT and loadings to CSV
 
-export_res <- function(fit, path, filename_stem) {
+export_efa_res <- function(fit, path, filename_stem) {
   sink(paste0(path, paste0(filename_stem, ".txt")))
   print(summary(fit))
   sink()
@@ -290,9 +290,9 @@ fit_promax_mlm  <- efa(data = mdib_bl, nfactors = 2:5, rotation = "promax",
 
 # Export basic results and details to TXT and loadings to CSV
 
-export_res(fit_oblimin_mlm, all_items_path, "oblimin_mlm")
-export_res(fit_geomin_mlm,  all_items_path, "geomin_mlm")
-export_res(fit_promax_mlm,  all_items_path, "promax_mlm")
+export_efa_res(fit_oblimin_mlm, all_items_path, "oblimin_mlm")
+export_efa_res(fit_geomin_mlm,  all_items_path, "geomin_mlm")
+export_efa_res(fit_promax_mlm,  all_items_path, "promax_mlm")
 
 # ---------------------------------------------------------------------------- #
 # Run EFA based on all items using WLSMV estimator ----
@@ -348,9 +348,9 @@ fit_promax_wlsmv  <- efa(data = mdib_bl_ord, nfactors = 2:5, rotation = "promax"
 
 # Export basic results and details to TXT and loadings to CSV
 
-export_res(fit_oblimin_wlsmv, all_items_path, "oblimin_wlsmv")
-export_res(fit_geomin_wlsmv,  all_items_path, "geomin_wlsmv")
-export_res(fit_promax_wlsmv,  all_items_path, "promax_wlsmv")
+export_efa_res(fit_oblimin_wlsmv, all_items_path, "oblimin_wlsmv")
+export_efa_res(fit_geomin_wlsmv,  all_items_path, "geomin_wlsmv")
+export_efa_res(fit_promax_wlsmv,  all_items_path, "promax_wlsmv")
 
 # ---------------------------------------------------------------------------- #
 # Inspect scree plot based on only theorized negative bias items ----
@@ -438,9 +438,9 @@ fit_promax_mlm  <- efa(data = mdib_bl_neg, nfactors = 1:2, rotation = "promax",
 
 # Export basic results and details to TXT and loadings to CSV
 
-export_res(fit_oblimin_mlm, neg_items_path, "oblimin_mlm")
-export_res(fit_geomin_mlm,  neg_items_path, "geomin_mlm")
-export_res(fit_promax_mlm,  neg_items_path, "promax_mlm")
+export_efa_res(fit_oblimin_mlm, neg_items_path, "oblimin_mlm")
+export_efa_res(fit_geomin_mlm,  neg_items_path, "geomin_mlm")
+export_efa_res(fit_promax_mlm,  neg_items_path, "promax_mlm")
 
 # ---------------------------------------------------------------------------- #
 # Run EFA based on only negative bias items using "WLSMV" estimator ----
@@ -475,9 +475,9 @@ fit_promax_wlsmv  <- efa(data = mdib_bl_neg_ord, nfactors = 1:2, rotation = "pro
 
 # Export basic results and details to TXT and loadings to CSV
 
-export_res(fit_oblimin_wlsmv, neg_items_path, "oblimin_wlsmv")
-export_res(fit_geomin_wlsmv,  neg_items_path, "geomin_wlsmv")
-export_res(fit_promax_wlsmv,  neg_items_path, "promax_wlsmv")
+export_efa_res(fit_oblimin_wlsmv, neg_items_path, "oblimin_wlsmv")
+export_efa_res(fit_geomin_wlsmv,  neg_items_path, "geomin_wlsmv")
+export_efa_res(fit_promax_wlsmv,  neg_items_path, "promax_wlsmv")
 
 # ---------------------------------------------------------------------------- #
 # Inspect scree plot based on 11 reduced negative bias items ----
@@ -576,9 +576,9 @@ fit_promax_mlm  <- efa(data = mdib_bl_neg_11, nfactors = 1:2, rotation = "promax
 
 # Export basic results and details to TXT and loadings to CSV
 
-export_res(fit_oblimin_mlm, neg_items_11_path, "oblimin_mlm")
-export_res(fit_geomin_mlm,  neg_items_11_path, "geomin_mlm")
-export_res(fit_promax_mlm,  neg_items_11_path, "promax_mlm")
+export_efa_res(fit_oblimin_mlm, neg_items_11_path, "oblimin_mlm")
+export_efa_res(fit_geomin_mlm,  neg_items_11_path, "geomin_mlm")
+export_efa_res(fit_promax_mlm,  neg_items_11_path, "promax_mlm")
 
 # ---------------------------------------------------------------------------- #
 # Run EFA based on 11 reduced negative bias items using "WLSMV" estimator ----
@@ -613,9 +613,9 @@ fit_promax_wlsmv  <- efa(data = mdib_bl_neg_11_ord, nfactors = 1:2, rotation = "
 
 # Export basic results and details to TXT and loadings to CSV
 
-export_res(fit_oblimin_wlsmv, neg_items_11_path, "oblimin_wlsmv")
-export_res(fit_geomin_wlsmv,  neg_items_11_path, "geomin_wlsmv")
-export_res(fit_promax_wlsmv,  neg_items_11_path, "promax_wlsmv")
+export_efa_res(fit_oblimin_wlsmv, neg_items_11_path, "oblimin_wlsmv")
+export_efa_res(fit_geomin_wlsmv,  neg_items_11_path, "geomin_wlsmv")
+export_efa_res(fit_promax_wlsmv,  neg_items_11_path, "promax_wlsmv")
 
 # ---------------------------------------------------------------------------- #
 # Inspect scree plot based on 10 reduced negative bias items ----
@@ -711,9 +711,9 @@ fit_promax_mlm  <- efa(data = mdib_bl_neg_10, nfactors = 1:2, rotation = "promax
 
 # Export basic results and details to TXT and loadings to CSV
 
-export_res(fit_oblimin_mlm, neg_items_10_path, "oblimin_mlm")
-export_res(fit_geomin_mlm,  neg_items_10_path, "geomin_mlm")
-export_res(fit_promax_mlm,  neg_items_10_path, "promax_mlm")
+export_efa_res(fit_oblimin_mlm, neg_items_10_path, "oblimin_mlm")
+export_efa_res(fit_geomin_mlm,  neg_items_10_path, "geomin_mlm")
+export_efa_res(fit_promax_mlm,  neg_items_10_path, "promax_mlm")
 
 # ---------------------------------------------------------------------------- #
 # Run EFA based on 10 reduced negative bias items using "WLSMV" estimator ----
@@ -739,9 +739,9 @@ fit_promax_wlsmv  <- efa(data = mdib_bl_neg_10_ord, nfactors = 1:2, rotation = "
 
 # Export basic results and details to TXT and loadings to CSV
 
-export_res(fit_oblimin_wlsmv, neg_items_10_path, "oblimin_wlsmv")
-export_res(fit_geomin_wlsmv,  neg_items_10_path, "geomin_wlsmv")
-export_res(fit_promax_wlsmv,  neg_items_10_path, "promax_wlsmv")
+export_efa_res(fit_oblimin_wlsmv, neg_items_10_path, "oblimin_wlsmv")
+export_efa_res(fit_geomin_wlsmv,  neg_items_10_path, "geomin_wlsmv")
+export_efa_res(fit_promax_wlsmv,  neg_items_10_path, "promax_wlsmv")
 
 # ---------------------------------------------------------------------------- #
 # Inspect scree plot based on 9 reduced negative bias items ----
@@ -839,9 +839,9 @@ fit_promax_mlm  <- efa(data = mdib_bl_neg_9, nfactors = 1:2, rotation = "promax"
 
 # Export basic results and details to TXT and loadings to CSV
 
-export_res(fit_oblimin_mlm, neg_items_9_path, "oblimin_mlm")
-export_res(fit_geomin_mlm,  neg_items_9_path, "geomin_mlm")
-export_res(fit_promax_mlm,  neg_items_9_path, "promax_mlm")
+export_efa_res(fit_oblimin_mlm, neg_items_9_path, "oblimin_mlm")
+export_efa_res(fit_geomin_mlm,  neg_items_9_path, "geomin_mlm")
+export_efa_res(fit_promax_mlm,  neg_items_9_path, "promax_mlm")
 
 # ---------------------------------------------------------------------------- #
 # Run EFA based on 9 reduced negative bias items using "WLSMV" estimator ----
@@ -867,6 +867,13 @@ fit_promax_wlsmv  <- efa(data = mdib_bl_neg_9_ord, nfactors = 1:2, rotation = "p
 
 # Export basic results and details to TXT and loadings to CSV
 
-export_res(fit_oblimin_wlsmv, neg_items_9_path, "oblimin_wlsmv")
-export_res(fit_geomin_wlsmv,  neg_items_9_path, "geomin_wlsmv")
-export_res(fit_promax_wlsmv,  neg_items_9_path, "promax_wlsmv")
+export_efa_res(fit_oblimin_wlsmv, neg_items_9_path, "oblimin_wlsmv")
+export_efa_res(fit_geomin_wlsmv,  neg_items_9_path, "geomin_wlsmv")
+export_efa_res(fit_promax_wlsmv,  neg_items_9_path, "promax_wlsmv")
+
+# ---------------------------------------------------------------------------- #
+# Export 9 reduced negative bias items for internal consistency analyses ----
+# ---------------------------------------------------------------------------- #
+
+save(mdib_bl_neg_9,     file = "./data/further_clean/mdib_bl_neg_9.Rdata")
+save(mdib_bl_neg_9_ord, file = "./data/further_clean/mdib_bl_neg_9_ord.Rdata")
