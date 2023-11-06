@@ -82,10 +82,10 @@ mdib_hd_dat <- mdib_hd_dat[!(mdib_hd_dat$record_id %in% exclude_ids), ]
 length(unique(mdib_hd_dat$record_id)) == 70
 
 # ---------------------------------------------------------------------------- #
-# Define scale items ----
+# Identify items for relevant scales ----
 # ---------------------------------------------------------------------------- #
 
-# Define items for negative bias (MDIB, BBSIQ; and benign bias for each just for
+# Identify items for negative bias (MDIB, BBSIQ; and benign bias for each just for
 # reference), anxiety sensitivity (ASI), fear of negative evaluation (BFNE-II), 
 # anxiety symptoms (Neuro-QoL Anxiety), social avoidance and distress (full SADS 
 # at baseline and reduced SADS at follow-up), and alcohol use (AUDIT-C)
@@ -183,18 +183,99 @@ length(sads_items) == 28
 length(sads_red_items) == 8
 length(auditc_items) == 3
 
-# Define items for purported MDIB scales (internal threats = catastrophizing 
-# about disease progression, external threats = negative social evaluation) and 
-# BBSIQ scales (internal threats, external threats)
+# ---------------------------------------------------------------------------- #
+# Rename MDIB items ----
+# ---------------------------------------------------------------------------- #
 
-mdib_neg_int_items <- c("md_bbsiq_1b_neg", "md_bbsiq_4c_neg", "md_bbsiq_6b_neg", 
-                        "md_bbsiq_8b_neg", "md_bbsiq_12b_neg")
-mdib_neg_ext_items <- c("md_bbsiq_2a_neg", "md_bbsiq_3c_neg", "md_bbsiq_5a_neg", 
-                        "md_bbsiq_7a_neg", "md_bbsiq_9c_neg", "md_bbsiq_10a_neg", 
-                        "md_bbsiq_11c_neg")
+# Define names to reflect benign/negative, internal/external threat, scenario, and item number
+
+mdib_items <- c(mdib_ben_items, mdib_neg_items)
+
+mdib_items_rename <-
+  c("mdib_ben_int_remember_1a", "mdib_ben_int_remember_1c", "mdib_ben_ext_server_2b",     "mdib_ben_ext_server_2c",
+    "mdib_ben_ext_reminder_3a", "mdib_ben_ext_reminder_3b", "mdib_ben_int_cleaning_4a",   "mdib_ben_int_cleaning_4b",
+    "mdib_ben_ext_neighbor_5b", "mdib_ben_ext_neighbor_5c", "mdib_ben_int_email_6a",      "mdib_ben_int_email_6c",
+    "mdib_ben_ext_exercise_7b", "mdib_ben_ext_exercise_7c", "mdib_ben_int_medication_8a", "mdib_ben_int_medication_8c",
+    "mdib_ben_ext_walk_9a",     "mdib_ben_ext_walk_9b",     "mdib_ben_ext_job_10b",       "mdib_ben_ext_job_10c",
+    "mdib_ben_ext_stumble_11a", "mdib_ben_ext_stumble_11b", "mdib_ben_int_cough_12a",     "mdib_ben_int_cough_12c",
+    "mdib_neg_int_remember_1b", "mdib_neg_ext_server_2a",   "mdib_neg_ext_reminder_3c",   "mdib_neg_int_cleaning_4c",
+    "mdib_neg_ext_neighbor_5a", "mdib_neg_int_email_6b",    "mdib_neg_ext_exercise_7a",   "mdib_neg_int_medication_8b",
+    "mdib_neg_ext_walk_9c",     "mdib_neg_ext_job_10a",     "mdib_neg_ext_stumble_11c",   "mdib_neg_int_cough_12b")
+
+meaning <-
+  c("ben", "ben", "ben", "ben",
+    "ben", "ben", "ben", "ben",
+    "ben", "ben", "ben", "ben",
+    "ben", "ben", "ben", "ben",
+    "ben", "ben", "ben", "ben",
+    "ben", "ben", "ben", "ben",
+    "neg", "neg", "neg", "neg",
+    "neg", "neg", "neg", "neg",
+    "neg", "neg", "neg", "neg")
+
+domain <-
+  c("int", "int", "ext", "ext",
+    "ext", "ext", "int", "int",
+    "ext", "ext", "int", "int",
+    "ext", "ext", "int", "int",
+    "ext", "ext", "ext", "ext",
+    "ext", "ext", "int", "int",
+    "int", "ext", "ext", "int",
+    "ext", "int", "ext", "int",
+    "ext", "ext", "ext", "int")
+
+mdib_item_map <- data.frame(items        = mdib_items,
+                            items_rename = mdib_items_rename,
+                            meaning      = meaning,
+                            domain       = domain)
+
+# Rename items
+
+names(mdib_hd_dat)[names(mdib_hd_dat) %in% mdib_items] <- 
+  mdib_items_rename[match(names(mdib_hd_dat)[names(mdib_hd_dat) %in% mdib_items], mdib_items)]
+
+mdib_neg_items <- mdib_item_map$items_rename[mdib_item_map$meaning == "neg"]
+mdib_ben_items <- mdib_item_map$items_rename[mdib_item_map$meaning == "ben"]
+
+length(mdib_neg_items) == 12
+length(mdib_ben_items) == 24
+
+# ---------------------------------------------------------------------------- #
+# Define scale items ----
+# ---------------------------------------------------------------------------- #
+
+# Define items for purported MDIB scales (internal threats = catastrophizing 
+# about disease progression, external threats = negative social evaluation)
+
+mdib_neg_int_items <- mdib_item_map$items_rename[mdib_item_map$meaning == "neg" &
+                                                   mdib_item_map$domain == "int"]
+mdib_neg_ext_items <- mdib_item_map$items_rename[mdib_item_map$meaning == "neg" &
+                                                   mdib_item_map$domain == "ext"]
+
+all(mdib_neg_int_items == c("mdib_neg_int_remember_1b", "mdib_neg_int_cleaning_4c", 
+                            "mdib_neg_int_email_6b", "mdib_neg_int_medication_8b", 
+                            "mdib_neg_int_cough_12b"))
+all(mdib_neg_ext_items == c("mdib_neg_ext_server_2a", "mdib_neg_ext_reminder_3c", 
+                            "mdib_neg_ext_neighbor_5a", "mdib_neg_ext_exercise_7a", 
+                            "mdib_neg_ext_walk_9c", "mdib_neg_ext_job_10a", 
+                            "mdib_neg_ext_stumble_11c"))
 
 length(mdib_neg_int_items) == 5
 length(mdib_neg_ext_items) == 7
+
+# Define items for 9 reduced negative bias items (internal threats, external threats)
+# retained after EFA (see "run_efa.R")
+
+mdib_neg_9_int_items <- c("mdib_neg_int_remember_1b", "mdib_neg_int_cleaning_4c", 
+                          "mdib_neg_int_medication_8b", "mdib_neg_int_cough_12b")
+mdib_neg_9_ext_items <- c("mdib_neg_ext_reminder_3c", "mdib_neg_ext_neighbor_5a", 
+                          "mdib_neg_ext_exercise_7a", "mdib_neg_ext_job_10a", 
+                          "mdib_neg_ext_stumble_11c")
+
+length(mdib_neg_9_int_items) == 4
+length(mdib_neg_9_ext_items) == 5
+
+# Define items for purported BBSIQ scales (internal threats, external threats)
 
 bbsiq_neg_int_items_mdib <- c("bbsiq_2b_neg", "bbsiq_3c_neg", "bbsiq_5a_neg", 
                               "bbsiq_8c_neg", "bbsiq_11b_neg", "bbsiq_12a_neg", 
@@ -206,18 +287,30 @@ bbsiq_neg_ext_items_mdib <- c("bbsiq_1c_neg", "bbsiq_4c_neg", "bbsiq_6a_neg",
 length(bbsiq_neg_int_items_mdib) == 7
 length(bbsiq_neg_ext_items_mdib) == 7
 
-# TODO: Define items for ASI subscales (physical, cognitive, and social concerns).
-# Waiting on ILL delivery of articles https://doi.org/10.1016/0887-6185(96)00021-7
-# and https://doi.org/10.1037//0021-843x.105.3.474, which Zinbarg et al. (1998)
-# suggests may report the factor structure.
+# Define items for ASI subscales (physical, cognitive, and social concerns) based
+# on three-factor solutions described in Taylor et al. (1996), Taylor (1996), and
+# Taylor et al. (2007). Given unstable factor structure of original ASI, analyze
+# two sets of subscales: (a) using items with non-contradictory results across
+# Taylor et al. (1996) and Taylor (1996)--note that sample in Taylor et al. (1996)
+# is part of the sample in Taylor (1996)--and (b) using two items per scale that
+# have the most face validity with physical, cognitive, and social concerns (see
+# "asi_scoring_decisions.xlsx" for details).
 
-asi_phy_items <- c()
-asi_cog_items <- c()
-asi_soc_items <- c()
+asi_phy_items_a <- c("asi_8", "asi_11", "asi_9", "asi_10")
+asi_cog_items_a <- c("asi_12", "asi_2", "asi_15")
+asi_soc_items_a <- c("asi_3", "asi_1", "asi_5", "asi_16", "asi_13")
 
+length(asi_phy_items_a) == 4
+length(asi_cog_items_a) == 3
+length(asi_soc_items_a) == 5
 
+asi_phy_items_b <- c("asi_11", "asi_9")
+asi_cog_items_b <- c("asi_12", "asi_2")
+asi_soc_items_b <- c("asi_1", "asi_13")
 
-
+length(asi_phy_items_b) == 2
+length(asi_cog_items_b) == 2
+length(asi_soc_items_b) == 2
 
 # Define items for 8-item BFNE-II, which is preferred (see Carleton et al., 2007; 
 # https://doi.org/bgn7v6)
@@ -232,24 +325,29 @@ length(bfne2_8_items) == 8
 
 # Store items in list
 
-mdib_dat_items <- list(mdib_neg = mdib_neg_items,
-                       mdib_neg_int = mdib_neg_int_items,
-                       mdib_neg_ext = mdib_neg_ext_items,
-                       mdib_ben = mdib_ben_items,
-                       bbsiq_neg = bbsiq_neg_items_mdib,
-                       bbsiq_neg_int = bbsiq_neg_int_items_mdib,
-                       bbsiq_neg_ext = bbsiq_neg_ext_items_mdib,
-                       bbsiq_ben = bbsiq_ben_items_mdib,
-                       asi = asi_items,
-                       asi_phy = asi_phy_items,
-                       asi_cog = asi_cog_items,
-                       asi_soc = asi_soc_items,
-                       bfne2 = bfne2_items,
-                       bfne2_8 = bfne2_8_items,
-                       neuroqol_anx = neuroqol_anx_items,
-                       sads = sads_items,
-                       sads_red = sads_red_items,
-                       auditc = auditc_items)
+mdib_dat_items <- list(mdib_neg       = mdib_neg_items,
+                       mdib_neg_int   = mdib_neg_int_items,
+                       mdib_neg_ext   = mdib_neg_ext_items,
+                       mdib_neg_9_int = mdib_neg_9_int_items,
+                       mdib_neg_9_ext = mdib_neg_9_ext_items,
+                       mdib_ben       = mdib_ben_items,
+                       bbsiq_neg      = bbsiq_neg_items_mdib,
+                       bbsiq_neg_int  = bbsiq_neg_int_items_mdib,
+                       bbsiq_neg_ext  = bbsiq_neg_ext_items_mdib,
+                       bbsiq_ben      = bbsiq_ben_items_mdib,
+                       asi            = asi_items,
+                       asi_phy_a      = asi_phy_items_a,
+                       asi_cog_a      = asi_cog_items_a,
+                       asi_soc_a      = asi_soc_items_a,
+                       asi_phy_b      = asi_phy_items_b,
+                       asi_cog_b      = asi_cog_items_b,
+                       asi_soc_b      = asi_soc_items_b,
+                       bfne2          = bfne2_items,
+                       bfne2_8        = bfne2_8_items,
+                       neuroqol_anx   = neuroqol_anx_items,
+                       sads           = sads_items,
+                       sads_red       = sads_red_items,
+                       auditc         = auditc_items)
 
 # ---------------------------------------------------------------------------- #
 # Recode "prefer not to answer" values ----
@@ -284,6 +382,45 @@ mdib_hd_dat[, mdib_dat_items$bfne2] <- mdib_hd_dat[, mdib_dat_items$bfne2] - 1
 all(range(mdib_hd_dat[, mdib_dat_items$bfne2], na.rm = TRUE) == c(0, 4))
 
 # ---------------------------------------------------------------------------- #
+# Compute scores ----
+# ---------------------------------------------------------------------------- #
+
+# Compute mean of available items. For MDIB, use 9 reduced negative items retained 
+# from EFA (see "run_efa.R")
+
+mdib_hd_dat$mdib_neg_9_int_m  <- rowMeans(mdib_hd_dat[, mdib_dat_items$mdib_neg_9_int], na.rm = TRUE)
+mdib_hd_dat$mdib_neg_9_ext_m  <- rowMeans(mdib_hd_dat[, mdib_dat_items$mdib_neg_9_ext], na.rm = TRUE)
+mdib_hd_dat$bbsiq_neg_int_m   <- rowMeans(mdib_hd_dat[, mdib_dat_items$bbsiq_neg_int],  na.rm = TRUE)
+mdib_hd_dat$bbsiq_neg_ext_m   <- rowMeans(mdib_hd_dat[, mdib_dat_items$bbsiq_neg_ext],  na.rm = TRUE)
+mdib_hd_dat$asi_phy_a_m       <- rowMeans(mdib_hd_dat[, mdib_dat_items$asi_phy_a],      na.rm = TRUE)
+mdib_hd_dat$asi_cog_a_m       <- rowMeans(mdib_hd_dat[, mdib_dat_items$asi_cog_a],      na.rm = TRUE)
+mdib_hd_dat$asi_soc_a_m       <- rowMeans(mdib_hd_dat[, mdib_dat_items$asi_soc_a],      na.rm = TRUE)
+mdib_hd_dat$asi_phy_b_m       <- rowMeans(mdib_hd_dat[, mdib_dat_items$asi_phy_b],      na.rm = TRUE)
+mdib_hd_dat$asi_cog_b_m       <- rowMeans(mdib_hd_dat[, mdib_dat_items$asi_cog_b],      na.rm = TRUE)
+mdib_hd_dat$asi_soc_b_m       <- rowMeans(mdib_hd_dat[, mdib_dat_items$asi_soc_b],      na.rm = TRUE)
+mdib_hd_dat$bfne2_8_m         <- rowMeans(mdib_hd_dat[, mdib_dat_items$bfne2_8],        na.rm = TRUE)
+mdib_hd_dat$neuroqol_anx_m    <- rowMeans(mdib_hd_dat[, mdib_dat_items$neuroqol_anx],   na.rm = TRUE)
+mdib_hd_dat$sads_m            <- rowMeans(mdib_hd_dat[, mdib_dat_items$sads],           na.rm = TRUE)
+mdib_hd_dat$sads_red_m        <- rowMeans(mdib_hd_dat[, mdib_dat_items$sads_red],       na.rm = TRUE)
+mdib_hd_dat$auditc_m          <- rowMeans(mdib_hd_dat[, mdib_dat_items$auditc],         na.rm = TRUE)
+
+mdib_hd_dat$mdib_neg_9_int_m[is.nan(mdib_hd_dat$mdib_neg_9_int_m)] <- NA
+mdib_hd_dat$mdib_neg_9_ext_m[is.nan(mdib_hd_dat$mdib_neg_9_ext_m)] <- NA
+mdib_hd_dat$bbsiq_neg_int_m[is.nan(mdib_hd_dat$bbsiq_neg_int_m)]   <- NA
+mdib_hd_dat$bbsiq_neg_ext_m[is.nan(mdib_hd_dat$bbsiq_neg_ext_m)]   <- NA
+mdib_hd_dat$asi_phy_a_m[is.nan(mdib_hd_dat$asi_phy_a_m)]           <- NA
+mdib_hd_dat$asi_cog_a_m[is.nan(mdib_hd_dat$asi_cog_a_m)]           <- NA
+mdib_hd_dat$asi_soc_a_m[is.nan(mdib_hd_dat$asi_soc_a_m)]           <- NA
+mdib_hd_dat$asi_phy_b_m[is.nan(mdib_hd_dat$asi_phy_b_m)]           <- NA
+mdib_hd_dat$asi_cog_b_m[is.nan(mdib_hd_dat$asi_cog_b_m)]           <- NA
+mdib_hd_dat$asi_soc_b_m[is.nan(mdib_hd_dat$asi_soc_b_m)]           <- NA
+mdib_hd_dat$bfne2_8_m[is.nan(mdib_hd_dat$bfne2_8_m)]               <- NA
+mdib_hd_dat$neuroqol_anx_m[is.nan(mdib_hd_dat$neuroqol_anx_m)]     <- NA
+mdib_hd_dat$sads_m[is.nan(mdib_hd_dat$sads_m)]                     <- NA
+mdib_hd_dat$sads_red_m[is.nan(mdib_hd_dat$sads_red_m)]             <- NA
+mdib_hd_dat$auditc_m[is.nan(mdib_hd_dat$auditc_m)]                 <- NA
+
+# ---------------------------------------------------------------------------- #
 # Remove participants with incomplete MDIB data at baseline ----
 # ---------------------------------------------------------------------------- #
 
@@ -312,3 +449,4 @@ save(mdib_hd_dat, file = "./data/further_clean/mdib_hd_dat.RData")
 dir.create("./data/helper")
 
 save(mdib_dat_items, file = "./data/helper/mdib_dat_items.RData")
+save(mdib_item_map,  file = "./data/helper/mdib_item_map.RData")

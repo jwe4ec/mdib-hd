@@ -10,13 +10,6 @@
 # Before running script, restart R (CTRL+SHIFT+F10 on Windows) and set working 
 # directory to parent folder
 
-# TODO: For reference on EFA, see "twincogFA.R" and "PHysCompFA.R" from 11/4/2019
-# multivariate class with Steve Boker
-
-
-
-
-
 # ---------------------------------------------------------------------------- #
 # Store working directory, check correct R version, load packages ----
 # ---------------------------------------------------------------------------- #
@@ -68,6 +61,7 @@ export_efa_res <- function(fit, path, filename_stem) {
 
 load("./data/further_clean/mdib_hd_dat2.RData")
 load("./data/helper/mdib_dat_items.RData")
+load("./data/helper/mdib_item_map.RData")
 
 # ---------------------------------------------------------------------------- #
 # Prepare data ----
@@ -79,64 +73,11 @@ mdib_items <- c(mdib_dat_items$mdib_ben, mdib_dat_items$mdib_neg)
 
 mdib_bl <- mdib_hd_dat2[mdib_hd_dat2$redcap_event_name == "baseline_arm_1", mdib_items]
 
-# Rename columns to reflect benign/negative, internal/external threat, scenario, and item number
-
-all(mdib_items ==
-  c("md_bbsiq_1a_benign",  "md_bbsiq_1c_benign",  "md_bbsiq_2b_benign",  "md_bbsiq_2c_benign",
-    "md_bbsiq_3a_benign",  "md_bbsiq_3b_benign",  "md_bbsiq_4a_benign",  "md_bbsiq_4b_benign",
-    "md_bbsiq_5b_benign",  "md_bbsiq_5c_benign",  "md_bbsiq_6a_benign",  "md_bbsiq_6c_benign",
-    "md_bbsiq_7b_benign",  "md_bbsiq_7c_benign",  "md_bbsiq_8a_benign",  "md_bbsiq_8c_benign",
-    "md_bbsiq_9a_benign",  "md_bbsiq_9b_benign",  "md_bbsiq_10b_benign", "md_bbsiq_10c_benign",
-    "md_bbsiq_11a_benign", "md_bbsiq_11b_benign", "md_bbsiq_12a_benign", "md_bbsiq_12c_benign",
-    "md_bbsiq_1b_neg",     "md_bbsiq_2a_neg",     "md_bbsiq_3c_neg",     "md_bbsiq_4c_neg",
-    "md_bbsiq_5a_neg",     "md_bbsiq_6b_neg",     "md_bbsiq_7a_neg",     "md_bbsiq_8b_neg",
-    "md_bbsiq_9c_neg",     "md_bbsiq_10a_neg",    "md_bbsiq_11c_neg",    "md_bbsiq_12b_neg"))
-
-mdib_items_rename <-
-  c("mdib_ben_int_remember_1a", "mdib_ben_int_remember_1c", "mdib_ben_ext_server_2b",     "mdib_ben_ext_server_2c",
-    "mdib_ben_ext_reminder_3a", "mdib_ben_ext_reminder_3b", "mdib_ben_int_cleaning_4a",   "mdib_ben_int_cleaning_4b",
-    "mdib_ben_ext_neighbor_5b", "mdib_ben_ext_neighbor_5c", "mdib_ben_int_email_6a",      "mdib_ben_int_email_6c",
-    "mdib_ben_ext_exercise_7b", "mdib_ben_ext_exercise_7c", "mdib_ben_int_medication_8a", "mdib_ben_int_medication_8c",
-    "mdib_ben_ext_walk_9a",     "mdib_ben_ext_walk_9b",     "mdib_ben_ext_job_10b",       "mdib_ben_ext_job_10c",
-    "mdib_ben_ext_stumble_11a", "mdib_ben_ext_stumble_11b", "mdib_ben_int_cough_12a",     "mdib_ben_int_cough_12c",
-    "mdib_neg_int_remember_1b", "mdib_neg_ext_server_2a",   "mdib_neg_ext_reminder_3c",   "mdib_neg_int_cleaning_4c",
-    "mdib_neg_ext_neighbor_5a", "mdib_neg_int_email_6b",    "mdib_neg_ext_exercise_7a",   "mdib_neg_int_medication_8b",
-    "mdib_neg_ext_walk_9c",     "mdib_neg_ext_job_10a",     "mdib_neg_ext_stumble_11c",   "mdib_neg_int_cough_12b")
-
-meaning <-
-  c("ben", "ben", "ben", "ben",
-    "ben", "ben", "ben", "ben",
-    "ben", "ben", "ben", "ben",
-    "ben", "ben", "ben", "ben",
-    "ben", "ben", "ben", "ben",
-    "ben", "ben", "ben", "ben",
-    "neg", "neg", "neg", "neg",
-    "neg", "neg", "neg", "neg",
-    "neg", "neg", "neg", "neg")
-
-domain <-
-  c("int", "int", "ext", "ext",
-    "ext", "ext", "int", "int",
-    "ext", "ext", "int", "int",
-    "ext", "ext", "int", "int",
-    "ext", "ext", "ext", "ext",
-    "ext", "ext", "int", "int",
-    "int", "ext", "ext", "int",
-    "ext", "int", "ext", "int",
-    "ext", "ext", "ext", "int")
-
-mdib <- data.frame(items        = mdib_items,
-                   items_rename = mdib_items_rename,
-                   meaning      = meaning,
-                   domain       = domain)
-
-names(mdib_bl) <- mdib_items_rename[match(names(mdib_bl), mdib_items)]
-
 # Order columns by meaning and then domain
 
-mdib <- mdib[order(mdib$meaning, mdib$domain), ]
+mdib_item_map <- mdib_item_map[order(mdib_item_map$meaning, mdib_item_map$domain), ]
 
-mdib_bl <- mdib_bl[match(mdib$items_rename, names(mdib_bl))]
+mdib_bl <- mdib_bl[match(mdib_item_map$items_rename, names(mdib_bl))]
 
 # ---------------------------------------------------------------------------- #
 # Inspect item distributions ----
