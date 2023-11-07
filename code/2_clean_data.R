@@ -289,28 +289,20 @@ length(bbsiq_neg_ext_items_mdib) == 7
 
 # Define items for ASI subscales (physical, cognitive, and social concerns) based
 # on three-factor solutions described in Taylor et al. (1996), Taylor (1996), and
-# Taylor et al. (2007). Given unstable factor structure of original ASI, analyze
-# two sets of subscales: (a) using items with non-contradictory results across
-# Taylor et al. (1996) and Taylor (1996)--note that sample in Taylor et al. (1996)
-# is part of the sample in Taylor (1996)--and (b) using two items per scale that
-# have the most face validity with physical, cognitive, and social concerns (see
-# "asi_scoring_decisions.xlsx" for details).
+# Taylor et al. (2007). Given unstable factor structure of original ASI, which was
+# not designed to be multidimensional, analyze ASI in two ways: (a) using all items
+# and (b) using reduced set of two items per scale, considering those that have the 
+# clearest face validity with physical, cognitive, and social concerns; have clear 
+# factor loadings in Taylor et al. (1996) and Taylor (1996); and are retained in 
+# Taylor et al. (2007)'s ASI-3 (see "asi_scoring_decisions.xlsx" for details).
 
-asi_phy_items_a <- c("asi_8", "asi_11", "asi_9", "asi_10")
-asi_cog_items_a <- c("asi_12", "asi_2", "asi_15")
-asi_soc_items_a <- c("asi_3", "asi_1", "asi_5", "asi_16", "asi_13")
+asi_red_phy_items <- c("asi_11", "asi_9")
+asi_red_cog_items <- c("asi_12", "asi_2")
+asi_red_soc_items <- c("asi_1", "asi_13")
 
-length(asi_phy_items_a) == 4
-length(asi_cog_items_a) == 3
-length(asi_soc_items_a) == 5
-
-asi_phy_items_b <- c("asi_11", "asi_9")
-asi_cog_items_b <- c("asi_12", "asi_2")
-asi_soc_items_b <- c("asi_1", "asi_13")
-
-length(asi_phy_items_b) == 2
-length(asi_cog_items_b) == 2
-length(asi_soc_items_b) == 2
+length(asi_red_phy_items) == 2
+length(asi_red_cog_items) == 2
+length(asi_red_soc_items) == 2
 
 # Define items for 8-item BFNE-II, which is preferred (see Carleton et al., 2007; 
 # https://doi.org/bgn7v6)
@@ -336,12 +328,9 @@ mdib_dat_items <- list(mdib_neg       = mdib_neg_items,
                        bbsiq_neg_ext  = bbsiq_neg_ext_items_mdib,
                        bbsiq_ben      = bbsiq_ben_items_mdib,
                        asi            = asi_items,
-                       asi_phy_a      = asi_phy_items_a,
-                       asi_cog_a      = asi_cog_items_a,
-                       asi_soc_a      = asi_soc_items_a,
-                       asi_phy_b      = asi_phy_items_b,
-                       asi_cog_b      = asi_cog_items_b,
-                       asi_soc_b      = asi_soc_items_b,
+                       asi_red_phy    = asi_red_phy_items,
+                       asi_red_cog    = asi_red_cog_items,
+                       asi_red_soc    = asi_red_soc_items,
                        bfne2          = bfne2_items,
                        bfne2_8        = bfne2_8_items,
                        neuroqol_anx   = neuroqol_anx_items,
@@ -388,32 +377,28 @@ all(range(mdib_hd_dat[, mdib_dat_items$bfne2], na.rm = TRUE) == c(0, 4))
 # Compute mean of available items. For MDIB, use 9 reduced negative items retained 
 # from EFA (see "run_efa.R")
 
-mdib_hd_dat$mdib_neg_9_int_m  <- rowMeans(mdib_hd_dat[, mdib_dat_items$mdib_neg_9_int], na.rm = TRUE)
-mdib_hd_dat$mdib_neg_9_ext_m  <- rowMeans(mdib_hd_dat[, mdib_dat_items$mdib_neg_9_ext], na.rm = TRUE)
-mdib_hd_dat$bbsiq_neg_int_m   <- rowMeans(mdib_hd_dat[, mdib_dat_items$bbsiq_neg_int],  na.rm = TRUE)
-mdib_hd_dat$bbsiq_neg_ext_m   <- rowMeans(mdib_hd_dat[, mdib_dat_items$bbsiq_neg_ext],  na.rm = TRUE)
-mdib_hd_dat$asi_phy_a_m       <- rowMeans(mdib_hd_dat[, mdib_dat_items$asi_phy_a],      na.rm = TRUE)
-mdib_hd_dat$asi_cog_a_m       <- rowMeans(mdib_hd_dat[, mdib_dat_items$asi_cog_a],      na.rm = TRUE)
-mdib_hd_dat$asi_soc_a_m       <- rowMeans(mdib_hd_dat[, mdib_dat_items$asi_soc_a],      na.rm = TRUE)
-mdib_hd_dat$asi_phy_b_m       <- rowMeans(mdib_hd_dat[, mdib_dat_items$asi_phy_b],      na.rm = TRUE)
-mdib_hd_dat$asi_cog_b_m       <- rowMeans(mdib_hd_dat[, mdib_dat_items$asi_cog_b],      na.rm = TRUE)
-mdib_hd_dat$asi_soc_b_m       <- rowMeans(mdib_hd_dat[, mdib_dat_items$asi_soc_b],      na.rm = TRUE)
-mdib_hd_dat$bfne2_8_m         <- rowMeans(mdib_hd_dat[, mdib_dat_items$bfne2_8],        na.rm = TRUE)
-mdib_hd_dat$neuroqol_anx_m    <- rowMeans(mdib_hd_dat[, mdib_dat_items$neuroqol_anx],   na.rm = TRUE)
-mdib_hd_dat$sads_m            <- rowMeans(mdib_hd_dat[, mdib_dat_items$sads],           na.rm = TRUE)
-mdib_hd_dat$sads_red_m        <- rowMeans(mdib_hd_dat[, mdib_dat_items$sads_red],       na.rm = TRUE)
-mdib_hd_dat$auditc_m          <- rowMeans(mdib_hd_dat[, mdib_dat_items$auditc],         na.rm = TRUE)
+mdib_hd_dat$mdib_neg_9_int_m <- rowMeans(mdib_hd_dat[, mdib_dat_items$mdib_neg_9_int], na.rm = TRUE)
+mdib_hd_dat$mdib_neg_9_ext_m <- rowMeans(mdib_hd_dat[, mdib_dat_items$mdib_neg_9_ext], na.rm = TRUE)
+mdib_hd_dat$bbsiq_neg_int_m  <- rowMeans(mdib_hd_dat[, mdib_dat_items$bbsiq_neg_int],  na.rm = TRUE)
+mdib_hd_dat$bbsiq_neg_ext_m  <- rowMeans(mdib_hd_dat[, mdib_dat_items$bbsiq_neg_ext],  na.rm = TRUE)
+mdib_hd_dat$asi_m            <- rowMeans(mdib_hd_dat[, mdib_dat_items$asi],            na.rm = TRUE)
+mdib_hd_dat$asi_red_phy_m    <- rowMeans(mdib_hd_dat[, mdib_dat_items$asi_red_phy],    na.rm = TRUE)
+mdib_hd_dat$asi_red_cog_m    <- rowMeans(mdib_hd_dat[, mdib_dat_items$asi_red_cog],    na.rm = TRUE)
+mdib_hd_dat$asi_red_soc_m    <- rowMeans(mdib_hd_dat[, mdib_dat_items$asi_red_soc],    na.rm = TRUE)
+mdib_hd_dat$bfne2_8_m        <- rowMeans(mdib_hd_dat[, mdib_dat_items$bfne2_8],        na.rm = TRUE)
+mdib_hd_dat$neuroqol_anx_m   <- rowMeans(mdib_hd_dat[, mdib_dat_items$neuroqol_anx],   na.rm = TRUE)
+mdib_hd_dat$sads_m           <- rowMeans(mdib_hd_dat[, mdib_dat_items$sads],           na.rm = TRUE)
+mdib_hd_dat$sads_red_m       <- rowMeans(mdib_hd_dat[, mdib_dat_items$sads_red],       na.rm = TRUE)
+mdib_hd_dat$auditc_m         <- rowMeans(mdib_hd_dat[, mdib_dat_items$auditc],         na.rm = TRUE)
 
 mdib_hd_dat$mdib_neg_9_int_m[is.nan(mdib_hd_dat$mdib_neg_9_int_m)] <- NA
 mdib_hd_dat$mdib_neg_9_ext_m[is.nan(mdib_hd_dat$mdib_neg_9_ext_m)] <- NA
 mdib_hd_dat$bbsiq_neg_int_m[is.nan(mdib_hd_dat$bbsiq_neg_int_m)]   <- NA
 mdib_hd_dat$bbsiq_neg_ext_m[is.nan(mdib_hd_dat$bbsiq_neg_ext_m)]   <- NA
-mdib_hd_dat$asi_phy_a_m[is.nan(mdib_hd_dat$asi_phy_a_m)]           <- NA
-mdib_hd_dat$asi_cog_a_m[is.nan(mdib_hd_dat$asi_cog_a_m)]           <- NA
-mdib_hd_dat$asi_soc_a_m[is.nan(mdib_hd_dat$asi_soc_a_m)]           <- NA
-mdib_hd_dat$asi_phy_b_m[is.nan(mdib_hd_dat$asi_phy_b_m)]           <- NA
-mdib_hd_dat$asi_cog_b_m[is.nan(mdib_hd_dat$asi_cog_b_m)]           <- NA
-mdib_hd_dat$asi_soc_b_m[is.nan(mdib_hd_dat$asi_soc_b_m)]           <- NA
+mdib_hd_dat$asi_m[is.nan(mdib_hd_dat$asi_m)]                       <- NA
+mdib_hd_dat$asi_red_phy_m[is.nan(mdib_hd_dat$asi_red_phy_m)]       <- NA
+mdib_hd_dat$asi_red_cog_m[is.nan(mdib_hd_dat$asi_red_cog_m)]       <- NA
+mdib_hd_dat$asi_red_soc_m[is.nan(mdib_hd_dat$asi_red_soc_m)]       <- NA
 mdib_hd_dat$bfne2_8_m[is.nan(mdib_hd_dat$bfne2_8_m)]               <- NA
 mdib_hd_dat$neuroqol_anx_m[is.nan(mdib_hd_dat$neuroqol_anx_m)]     <- NA
 mdib_hd_dat$sads_m[is.nan(mdib_hd_dat$sads_m)]                     <- NA
