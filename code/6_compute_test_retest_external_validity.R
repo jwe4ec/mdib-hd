@@ -295,6 +295,10 @@ rm_cols <- c("sads_red_m.baseline",
 
 mdib_hd_dat2_short_wide <- mdib_hd_dat2_short_wide[, !(names(mdib_hd_dat2_short_wide) %in% rm_cols)]
 
+# Export data
+
+save(mdib_hd_dat2_short_wide, file = "./data/further_clean/mdib_hd_dat2_short_wide.RData")
+
 # ---------------------------------------------------------------------------- #
 # Analyze test-retest reliability ----
 # ---------------------------------------------------------------------------- #
