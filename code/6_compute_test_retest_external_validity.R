@@ -28,7 +28,7 @@ groundhog_day <- version_control()
 
 # Load packages
 
-pkgs <- c("cocor", "rockchalk")
+pkgs <- c("cocor", "rockchalk", "r2glmm")
 groundhog.library(pkgs, groundhog_day)
 
 # Set seed
@@ -70,6 +70,188 @@ cor_test_one_to_many <- function(dat, x_var, y_vars, metric) {
                     r, t, df, p, ci_ll, ci_ul, n)
   
   return(res)
+}
+
+# TODO (remove function if not ultimately used): Define function to compute 
+# semipartial R-squared estimates and convert to semipartial r
+
+compute_sp_r <- function(model) {
+  sp_rsq <- r2beta(model, partial = TRUE, method = "lm")
+  sp_rsq <- sp_rsq[sp_rsq$Effect != "Model", ]
+  
+  sp_r_df <- data.frame(effect          = sp_rsq$Effect,
+                        sp_rsq          = sp_rsq$Rsq,
+                        sp_rsq_lower.CL = sp_rsq$lower.CL,
+                        sp_rsq_upper.CL = sp_rsq$upper.CL,
+                        sp_r            = sqrt(sp_rsq$Rsq),
+                        sp_r_lower.CL   = sqrt(sp_rsq$lower.CL),
+                        sp_r_upper.CL   = sqrt(sp_rsq$upper.CL))
+  
+  # Maintain predictor order from model (don't reorder in descending R-squared)
+  
+  sp_r_df <- sp_r_df[match(sp_r_df$effect, attr(model$terms, "term.labels")), ]
+  
+  sp_r_df <- rbind(c("(Intercept)", rep(NA, length(sp_r_df) - 1)),
+                   sp_r_df)
+  
+  return(sp_r_df)
+}
+
+
+
+
+
+# Define function to run hierarchical multiple regression
+
+run_hmr <- function(dat, outcome, bbsiq_scale, mdib_scale) {
+  fml_step0 <- as.formula(paste(outcome, "~", 1))
+  fml_step1 <- as.formula(paste(outcome, "~", bbsiq_scale))
+  fml_step2 <- as.formula(paste(outcome, "~", bbsiq_scale, "+", mdib_scale))
+  
+  # Need to use "do.call" so that "fml" is evaluated before being sent to "lm"
+  # but quote "dat" so it is not. Otherwise, "meanCenter" lacks the evaluated
+  # "fml" call to "lm" and returns an error.
+  
+  lm_step0 <- do.call("lm", list(fml_step0, data = quote(dat)))
+  lm_step1 <- do.call("lm", list(fml_step1, data = quote(dat)))
+  lm_step2 <- do.call("lm", list(fml_step2, data = quote(dat)))
+  
+  lm_step1_mc <- meanCenter(lm_step1, centerOnlyInteractors = FALSE)
+  lm_step2_mc <- meanCenter(lm_step2, centerOnlyInteractors = FALSE)
+  
+  anova_diff <- anova(lm_step1_mc, lm_step2_mc)
+  
+  summary_lm_step1_mc <- summary(lm_step1_mc)
+  summary_lm_step2_mc <- summary(lm_step2_mc)
+  
+  confint_lm_step1_mc <- as.data.frame(confint(lm_step1_mc))
+  confint_lm_step2_mc <- as.data.frame(confint(lm_step2_mc))
+  
+  # Compute zero-order r between BBSIQ score and outcome (at Step 1)
+  
+  bbsiq_scale_r_lm_step1 <- sqrt(summary_lm_step1_mc$r.squared)
+  
+  # Compute semipartial r between MDIB score and outcome (at Step 2)
+  
+  ss_total <- anova(lm_step0)$`Sum Sq`
+  ss_diff  <- anova_diff$`Sum of Sq`[2]
+  
+  mdib_scale_sp_rsq_lm_step2 <- ss_diff/ss_total
+  mdib_scale_sp_r_lm_step2   <- sqrt(mdib_scale_sp_rsq_lm_step2)
+  
+  # TODO: Consider computing CIs for semipartial r for MDIB score. However, in
+  # simple linear regression, CIs from "r2beta()" (even when "method = 'lm'") differ 
+  # from those obtained from "cor.test()", which may use a different method to 
+  # compute CIs (even though point estimates are the same). Emailed Byron Jaeger 
+  # (developer of "r2glmm" package) about this discrepancy on 11/12/23. Also, in
+  # multiple linear regression, point estimates from "r2beta()" (even when "method
+  # = 'lm'") differ from those computed manually (not yet sure why).
+  
+  compute_sp_r(lm_step2_mc)
+  
+  
+  
+  
+  
+  # Collect results in list
+  
+  res <- list(lm_step0                   = lm_step0,
+              lm_step1                   = lm_step1,
+              lm_step2                   = lm_step2,
+              lm_step1_mc                = lm_step1_mc,
+              lm_step2_mc                = lm_step2_mc,
+              anova_diff                 = anova_diff,
+              summary_lm_step1_mc        = summary_lm_step1_mc,
+              summary_lm_step2_mc        = summary_lm_step2_mc,
+              confint_lm_step1_mc        = confint_lm_step1_mc,
+              confint_lm_step2_mc        = confint_lm_step2_mc,
+              bbsiq_scale_r_lm_step1     = bbsiq_scale_r_lm_step1,
+              ss_total                   = ss_total,
+              ss_diff                    = ss_diff,
+              mdib_scale_sp_rsq_lm_step2 = mdib_scale_sp_rsq_lm_step2,
+              mdib_scale_sp_r_lm_step2   = mdib_scale_sp_r_lm_step2)
+  
+  return(res)
+}
+
+# Define function to create hierarchical multiple regression table
+
+create_hmr_tbl <- function(res, outcome) {
+  df_step1 <- cbind(as.data.frame(res$summary_lm_step1_mc$coefficients),
+                    res$confint_lm_step1_mc)
+  df_step2 <- cbind(as.data.frame(res$summary_lm_step2_mc$coefficients),
+                    res$confint_lm_step2_mc)
+  
+  df_step1$Outcome <- outcome
+  df_step2$Outcome <- outcome
+  
+  df_step1$Model <- "Step 1"
+  df_step2$Model <- "Step 2"
+  
+  df_step1$Effect <- row.names(df_step1)
+  df_step2$Effect <- row.names(df_step2)
+  
+  target_cols <- c("Outcome", "Model", "Effect")
+  df_step1 <- df_step1[, c(target_cols, names(df_step1)[!(names(df_step1) %in% target_cols)])]
+  df_step2 <- df_step2[, c(target_cols, names(df_step2)[!(names(df_step2) %in% target_cols)])]
+  
+  df_step1 <- df_step1[row.names(df_step1) != "(Intercept)", ]
+  df_step2 <- df_step2[row.names(df_step2) != "(Intercept)", ]
+  
+  row.names(df_step1) <- 1:nrow(df_step1)
+  row.names(df_step2) <- 1:nrow(df_step2)
+  
+  df_step1$r <- res$bbsiq_scale_r_lm_step1
+  df_step2$r <- NA
+  
+  df_step1$sp_r <- NA
+  
+  df_step2$sp_r <- NA
+  df_step2$sp_r[grepl("mdib", df_step2$Effect)] <- res$mdib_scale_sp_r_lm_step2
+  
+  df <- rbind(df_step1, df_step2)
+  
+  # Rename columns
+  
+  names(df)[names(df) == "Estimate"]   <- "b"
+  names(df)[names(df) == "Std. Error"] <- "SE"
+  names(df)[names(df) == "t value"]    <- "t"
+  names(df)[names(df) == "Pr(>|t|)"]   <- "p"
+  
+  # Identify significant parameters
+  
+  df$sig <- NA
+  df$sig <- ifelse(df$`2.5 %` > 0 | df$`97.5 %` < 0, 1, 0)
+  
+  # Round selected columns and ensure two decimal digits are printed
+  
+  two_digit_vars   <- c("b", "SE", "t", "2.5 %", "97.5 %", "r", "sp_r")
+  three_digit_vars <- "p"
+  
+  df[, two_digit_vars]   <- format(round(df[, two_digit_vars],   2),
+                                   nsmall = 2, trim = TRUE)
+  df[, three_digit_vars] <- format(round(df[, three_digit_vars], 3),
+                                   nsmall = 3, trim = TRUE)
+  
+  # Format combined b and SE column
+  
+  df$`b (SE)` <- paste0(df$b, " (", df$SE, ")")
+  
+  # Format CIs
+  
+  df$`95% CI` <- paste0("[", df$`2.5 %`, ", ", df$`97.5 %`, "]")
+  
+  # Remove redundant columns
+  
+  rm_cols <- c("b", "SE", "2.5 %", "97.5 %")
+  
+  df <- df[, !(names(df) %in% rm_cols)]
+  
+  # Rearrange columns
+  
+  df <- df[, c("Outcome", "Model", "Effect", "b (SE)", "t", "p", "95% CI", "r", "sp_r", "sig")]
+  
+  return(df)
 }
 
 # ---------------------------------------------------------------------------- #
@@ -232,76 +414,66 @@ mdib_neg_9_ext_m_pred <- cor_test_one_to_many(mdib_hd_dat2_short_wide, x_var, y_
 # Analyze incremental concurrent validity ----
 # ---------------------------------------------------------------------------- #
 
-# TODO (restrict analysis to those with scores for all 3 variables--outcome, BBSIQ, MDIB--in a given analysis)
-# TODO (compute zero-order Pearson product-moment correlation between the BBSIQ score and the outcome) = Already done for concurrent validity above
-# TODO (semipartial correlation between the MDIB score and the outcome (i.e., after controlling for the BBSIQ score)
+# Given no missingness in predictors, each analysis is restricted to participants with
+# outcome (i.e., same sample size as concurrent validity analyses above)
 
-lm_conc_neuroqol_mdib_neg_9_int_step1 <- lm(neuroqol_anx_m.baseline ~ bbsiq_neg_int_m.baseline, 
-                                            mdib_hd_dat2_short_wide)
-lm_conc_neuroqol_mdib_neg_9_int_step2 <- lm(neuroqol_anx_m.baseline ~ bbsiq_neg_int_m.baseline + mdib_neg_9_int_m.baseline,
-                                            mdib_hd_dat2_short_wide)
+predictors <- c("bbsiq_neg_int_m.baseline", "bbsiq_neg_ext_m.baseline",
+                "mdib_neg_9_int_m.baseline", "mdib_neg_9_ext_m.baseline")
 
-lm_conc_neuroqol_mdib_neg_9_ext_step1 <- lm(neuroqol_anx_m.baseline ~ bbsiq_neg_ext_m.baseline,
-                                            mdib_hd_dat2_short_wide)
-lm_conc_neuroqol_mdib_neg_9_ext_step2 <- lm(neuroqol_anx_m.baseline ~ bbsiq_neg_ext_m.baseline + mdib_neg_9_ext_m.baseline,
-                                            mdib_hd_dat2_short_wide)
+sum(is.na(mdib_hd_dat2_short_wide[predictors])) == 0
 
-lm_conc_sads_mdib_neg_9_ext_step1     <- lm(sads_m.baseline ~ bbsiq_neg_ext_m.baseline,
-                                            mdib_hd_dat2_short_wide)
-lm_conc_sads_mdib_neg_9_ext_step2     <- lm(sads_m.baseline ~ bbsiq_neg_ext_m.baseline + mdib_neg_9_ext_m.baseline,
-                                            mdib_hd_dat2_short_wide)
+# Run function to analyze incremental concurrent validity
 
-lm_conc_neuroqol_mdib_neg_9_int_step1_mc <- meanCenter(lm_conc_neuroqol_mdib_neg_9_int_step1, centerOnlyInteractors = FALSE)
-lm_conc_neuroqol_mdib_neg_9_int_step2_mc <- meanCenter(lm_conc_neuroqol_mdib_neg_9_int_step2, centerOnlyInteractors = FALSE)
-lm_conc_neuroqol_mdib_neg_9_ext_step1_mc <- meanCenter(lm_conc_neuroqol_mdib_neg_9_ext_step1, centerOnlyInteractors = FALSE)
-lm_conc_neuroqol_mdib_neg_9_ext_step2_mc <- meanCenter(lm_conc_neuroqol_mdib_neg_9_ext_step2, centerOnlyInteractors = FALSE)
-lm_conc_sads_mdib_neg_9_ext_step1_mc     <- meanCenter(lm_conc_sads_mdib_neg_9_ext_step1,     centerOnlyInteractors = FALSE)
-lm_conc_sads_mdib_neg_9_ext_step2_mc     <- meanCenter(lm_conc_sads_mdib_neg_9_ext_step2,     centerOnlyInteractors = FALSE)
+res_conc_neuroqol_mdib_neg_9_int <- run_hmr(mdib_hd_dat2_short_wide,
+                                            "neuroqol_anx_m.baseline",
+                                            "bbsiq_neg_int_m.baseline", "mdib_neg_9_int_m.baseline")
 
-anova(lm_conc_neuroqol_mdib_neg_9_int_step1_mc, lm_conc_neuroqol_mdib_neg_9_int_step2_mc)
-anova(lm_conc_neuroqol_mdib_neg_9_ext_step1_mc, lm_conc_neuroqol_mdib_neg_9_ext_step2_mc)
-anova(lm_conc_sads_mdib_neg_9_ext_step1_mc,     lm_conc_sads_mdib_neg_9_ext_step2_mc)
+res_conc_neuroqol_mdib_neg_9_ext <- run_hmr(mdib_hd_dat2_short_wide,
+                                            "neuroqol_anx_m.baseline",
+                                            "bbsiq_neg_ext_m.baseline", "mdib_neg_9_ext_m.baseline")
+res_conc_sads_mdib_neg_9_ext     <- run_hmr(mdib_hd_dat2_short_wide,
+                                            "sads_m.baseline",
+                                            "bbsiq_neg_ext_m.baseline", "mdib_neg_9_ext_m.baseline")
 
+# Create tables
 
+tbl_conc_neuroqol_mdib_neg_9_int <- create_hmr_tbl(res_conc_neuroqol_mdib_neg_9_int, "neuroqol_anx_m.baseline")
 
+tbl_conc_neuroqol_mdib_neg_9_ext <- create_hmr_tbl(res_conc_neuroqol_mdib_neg_9_ext, "neuroqol_anx_m.baseline")
+tbl_conc_sads_mdib_neg_9_ext     <- create_hmr_tbl(res_conc_sads_mdib_neg_9_ext,     "sads_m.baseline")
 
+tbl_conc <- rbind(tbl_conc_neuroqol_mdib_neg_9_int, 
+                  tbl_conc_neuroqol_mdib_neg_9_ext, tbl_conc_sads_mdib_neg_9_ext)
 
 # ---------------------------------------------------------------------------- #
 # Analyze incremental predictive validity ----
 # ---------------------------------------------------------------------------- #
 
-# TODO (restrict analysis to those with scores for all 3 variables--outcome, BBSIQ, MDIB--in a given analysis)
-# TODO (compute zero-order Pearson product-moment correlation between the BBSIQ score and the outcome) = Already done for predictive validity above
-# TODO (semipartial correlation between the MDIB score and the outcome (i.e., after controlling for the BBSIQ score)
+# Given no missingness in predictors (see above), each analysis is restricted to 
+# participants with outcome (same sample size as predictive validity analyses above)
 
-lm_pred_neuroqol_mdib_neg_9_int_step1 <- lm(neuroqol_anx_m.followup ~ bbsiq_neg_int_m.baseline,
-                                            mdib_hd_dat2_short_wide)
-lm_pred_neuroqol_mdib_neg_9_int_step2 <- lm(neuroqol_anx_m.followup ~ bbsiq_neg_int_m.baseline + mdib_neg_9_int_m.baseline,
-                                            mdib_hd_dat2_short_wide)
+# Run function to analyze incremental concurrent validity
 
-lm_pred_neuroqol_mdib_neg_9_ext_step1 <- lm(neuroqol_anx_m.followup ~ bbsiq_neg_ext_m.baseline,
-                                            mdib_hd_dat2_short_wide)
-lm_pred_neuroqol_mdib_neg_9_ext_step2 <- lm(neuroqol_anx_m.followup ~ bbsiq_neg_ext_m.baseline + mdib_neg_9_ext_m.baseline,
-                                            mdib_hd_dat2_short_wide)
+res_pred_neuroqol_mdib_neg_9_int <- run_hmr(mdib_hd_dat2_short_wide,
+                                            "neuroqol_anx_m.followup",
+                                            "bbsiq_neg_int_m.baseline", "mdib_neg_9_int_m.baseline")
 
-lm_pred_sads_mdib_neg_9_ext_step1     <- lm(sads_red_m.followup ~ bbsiq_neg_ext_m.baseline,
-                                            mdib_hd_dat2_short_wide)
-lm_pred_sads_mdib_neg_9_ext_step2     <- lm(sads_red_m.followup ~ bbsiq_neg_ext_m.baseline + mdib_neg_9_ext_m.baseline,
-                                            mdib_hd_dat2_short_wide)
+res_pred_neuroqol_mdib_neg_9_ext <- run_hmr(mdib_hd_dat2_short_wide,
+                                            "neuroqol_anx_m.followup",
+                                            "bbsiq_neg_ext_m.baseline", "mdib_neg_9_ext_m.baseline")
+res_pred_sads_mdib_neg_9_ext     <- run_hmr(mdib_hd_dat2_short_wide,
+                                            "sads_red_m.followup",
+                                            "bbsiq_neg_ext_m.baseline", "mdib_neg_9_ext_m.baseline")
 
-lm_pred_neuroqol_mdib_neg_9_int_step1_mc <- meanCenter(lm_pred_neuroqol_mdib_neg_9_int_step1, centerOnlyInteractors = FALSE)
-lm_pred_neuroqol_mdib_neg_9_int_step2_mc <- meanCenter(lm_pred_neuroqol_mdib_neg_9_int_step2, centerOnlyInteractors = FALSE)
-lm_pred_neuroqol_mdib_neg_9_ext_step1_mc <- meanCenter(lm_pred_neuroqol_mdib_neg_9_ext_step1, centerOnlyInteractors = FALSE)
-lm_pred_neuroqol_mdib_neg_9_ext_step2_mc <- meanCenter(lm_pred_neuroqol_mdib_neg_9_ext_step2, centerOnlyInteractors = FALSE)
-lm_pred_sads_mdib_neg_9_ext_step1_mc     <- meanCenter(lm_pred_sads_mdib_neg_9_ext_step1,     centerOnlyInteractors = FALSE)
-lm_pred_sads_mdib_neg_9_ext_step2_mc     <- meanCenter(lm_pred_sads_mdib_neg_9_ext_step2,     centerOnlyInteractors = FALSE)
+# Create tables
 
-anova(lm_pred_neuroqol_mdib_neg_9_int_step1_mc, lm_pred_neuroqol_mdib_neg_9_int_step2_mc)
-anova(lm_pred_neuroqol_mdib_neg_9_ext_step1_mc, lm_pred_neuroqol_mdib_neg_9_ext_step2_mc)
-anova(lm_pred_sads_mdib_neg_9_ext_step1_mc,     lm_pred_sads_mdib_neg_9_ext_step2_mc)
+tbl_pred_neuroqol_mdib_neg_9_int <- create_hmr_tbl(res_pred_neuroqol_mdib_neg_9_int, "neuroqol_anx_m.followup")
 
+tbl_pred_neuroqol_mdib_neg_9_ext <- create_hmr_tbl(res_pred_neuroqol_mdib_neg_9_ext, "neuroqol_anx_m.followup")
+tbl_pred_sads_mdib_neg_9_ext     <- create_hmr_tbl(res_pred_sads_mdib_neg_9_ext,     "sads_red_m.followup")
 
-
+tbl_pred <- rbind(tbl_pred_neuroqol_mdib_neg_9_int, 
+                  tbl_pred_neuroqol_mdib_neg_9_ext, tbl_pred_sads_mdib_neg_9_ext)
 
 # ---------------------------------------------------------------------------- #
 # Write results ----
