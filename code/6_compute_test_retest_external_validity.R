@@ -139,6 +139,17 @@ run_hmr <- function(dat, outcome, bbsiq_scale, mdib_scale) {
   mdib_scale_sp_rsq_lm_step2 <- ss_diff/ss_total
   mdib_scale_sp_r_lm_step2   <- sqrt(mdib_scale_sp_rsq_lm_step2)
   
+  # TODO: Compute semipartial r between BBSIQ score and outcome (at Step 2) given 
+  # evidence of mutual suppression (e.g., for incremental predictive validity analysis
+  # involving MDIB negative internal bias and NeuroQoL Anxiety). Do this by computing
+  # the square root of the R-squared change from Model 1 to Model 2 when Model 1 has
+  # only MDIB as a predictor and Model 2 has both MDIB and BBSIQ as predictors (see
+  # "2023.11.13 Suppression Notes.docx" for reference).
+  
+  
+  
+  
+  
   # TODO: Consider computing CIs for semipartial r for MDIB score. However, in
   # simple linear regression, CIs from "r2beta()" (even when "method = 'lm'") differ 
   # from those obtained from "cor.test()", which may use a different method to 
@@ -468,30 +479,6 @@ res_pred_neuroqol_mdib_neg_9_ext <- run_hmr(mdib_hd_dat2_short_wide,
 res_pred_sads_mdib_neg_9_ext     <- run_hmr(mdib_hd_dat2_short_wide,
                                             "sads_red_m.followup",
                                             "bbsiq_neg_ext_m.baseline", "mdib_neg_9_ext_m.baseline")
-
-# TODO: Check results for "res_pred_neuroqol_mdib_neg_9_int" because the semipartial
-# r (.17) is higher than the zero-order r (.08) between MDIB and NeuroQoL Anxiety found
-# in predictive validity analyses above
-
-res_pred_neuroqol_mdib_neg_9_int$anova_diff
-anova(res_pred_neuroqol_mdib_neg_9_int$lm_step0)
-1.6569/57.4 # rsq = 0.02886585
-sqrt(1.6569/57.4) # 0.1698995 (matches MDIB's semipartial r = -.17)
-
-test <- lm(neuroqol_anx_m.followup ~ mdib_neg_9_int_m.baseline, mdib_hd_dat2_short_wide)
-summary(test)
-               # rsq = 0.007199
-sqrt(0.007199) # 0.08484692 (matches MDIB's zero-order r = .08)
-
-test2 <- lm(neuroqol_anx_m.followup ~ mdib_neg_9_int_m.baseline + bbsiq_neg_int_m.baseline, mdib_hd_dat2_short_wide)
-anova(test, test2)
-8.1327/57.4 # rsq = 0.1416847
-sqrt(8.1327/57.4) # 0.3764102 (higher than BBSIQ's zero-order r = .35)
-summary(test2)
-
-
-
-
 
 # Create tables
 
