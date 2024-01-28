@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------- #
-# Compute Test-Retest Reliability and External Validity
+# Compute Test-Retest Reliability and External Validity and Create Tables
 # Author: Jeremy W. Eberle
 # ---------------------------------------------------------------------------- #
 
@@ -28,8 +28,13 @@ groundhog_day <- version_control()
 
 # Load packages
 
-pkgs <- c("cocor", "rockchalk", "r2glmm")
+pkgs <- c("cocor", "rockchalk", "r2glmm", "flextable", "officer", "ftExtra")
 groundhog.library(pkgs, groundhog_day)
+
+# Set "flextable" package defaults and load "officer" package properties
+
+source("./code/1b_set_flextable_defaults.R")
+source("./code/1c_set_officer_properties.R")
 
 # Set seed
 
@@ -68,6 +73,30 @@ cor_test_one_to_many <- function(dat, x_var, y_vars, metric) {
   
   res <- data.frame(metric, x_var, y_var = y_vars, 
                     r, t, df, p, ci_ll, ci_ul, n)
+  
+  # Round selected columns and ensure two decimal digits are printed
+  
+  two_digit_vars   <- c("r", "t", "ci_ll", "ci_ul")
+  three_digit_vars <- "p"
+  
+  res[, two_digit_vars]   <- format(round(res[, two_digit_vars],   2),
+                                    nsmall = 2, trim = TRUE)
+  res[, three_digit_vars] <- format(round(res[, three_digit_vars], 3),
+                                    nsmall = 3, trim = TRUE)
+  
+  # Format CIs
+  
+  res$ci <- paste0("[", res$ci_ll, ", ", res$ci_ul, "]")
+  
+  # Remove redundant columns
+  
+  rm_cols <- c("ci_ll", "ci_ul")
+  
+  res <- res[, !(names(res) %in% rm_cols)]
+  
+  # Rearrange columns
+  
+  res <- res[, c("metric", "x_var", "y_var", "r", "t", "df", "p", "ci", "n")]
   
   return(res)
 }
@@ -426,6 +455,15 @@ y_vars <- c("neuroqol_anx_m.followup", "sads_red_m.followup")
 mdib_neg_9_ext_m_pred <- cor_test_one_to_many(mdib_hd_dat2_short_wide, x_var, y_vars, metric)
 
 # ---------------------------------------------------------------------------- #
+# Create table for convergent, discriminant, concurrent, and predictive validity ----
+# ---------------------------------------------------------------------------- #
+
+tbl_external_validity <- rbind(mdib_neg_9_int_m_conv, mdib_neg_9_ext_m_conv, 
+                               mdib_neg_9_int_m_disc, mdib_neg_9_ext_m_disc, 
+                               mdib_neg_9_int_m_conc, mdib_neg_9_ext_m_conc, 
+                               mdib_neg_9_int_m_pred, mdib_neg_9_ext_m_pred)
+
+# ---------------------------------------------------------------------------- #
 # Analyze incremental concurrent validity ----
 # ---------------------------------------------------------------------------- #
 
@@ -460,6 +498,9 @@ tbl_conc_sads_mdib_neg_9_ext     <- create_hmr_tbl(res_conc_sads_mdib_neg_9_ext,
 tbl_conc <- rbind(tbl_conc_neuroqol_mdib_neg_9_int, 
                   tbl_conc_neuroqol_mdib_neg_9_ext, tbl_conc_sads_mdib_neg_9_ext)
 
+tbl_conc$metric <- "incremental concurrent"
+tbl_conc <- tbl_conc[, c("metric", names(tbl_conc)[!(names(tbl_conc) %in% "metric")])]
+
 # ---------------------------------------------------------------------------- #
 # Analyze incremental predictive validity ----
 # ---------------------------------------------------------------------------- #
@@ -490,12 +531,214 @@ tbl_pred_sads_mdib_neg_9_ext     <- create_hmr_tbl(res_pred_sads_mdib_neg_9_ext,
 tbl_pred <- rbind(tbl_pred_neuroqol_mdib_neg_9_int, 
                   tbl_pred_neuroqol_mdib_neg_9_ext, tbl_pred_sads_mdib_neg_9_ext)
 
+tbl_pred$metric <- "incremental predictive"
+tbl_pred <- tbl_pred[, c("metric", names(tbl_pred)[!(names(tbl_pred) %in% "metric")])]
+
 # ---------------------------------------------------------------------------- #
-# Write results ----
+# Create table for incremental validity ----
 # ---------------------------------------------------------------------------- #
 
-# TODO
+tbl_incremental_validity <- rbind(tbl_conc, tbl_pred)
 
+# ---------------------------------------------------------------------------- #
+# Set "flextable" defaults and section and text properties ----
+# ---------------------------------------------------------------------------- #
 
+# "flextable" defaults are set in "set_flextable_defaults.R" above
 
+# Section and text properties are sourced from "set_officer_properties.R" above
 
+# ---------------------------------------------------------------------------- #
+# Format table for convergent, discriminant, concurrent, and predictive validity ----
+# ---------------------------------------------------------------------------- #
+
+# "flextable" defaults are set in "set_flextable_defaults.R" above
+
+# Define function to format external validity table (except incremental validity)
+
+format_tbl_external_validity <- function(tbl_external_validity, gen_note, title) {
+  tbl <- tbl_external_validity
+  
+  left_align_body_cols <- c("x_var", "y_var")
+  
+  target_cols <- c("metric", "x_var", "y_var", "r", "t", "df", "p", "ci", "n")
+
+  # Restructure data as grouped data for table spanners based on "metric"
+  
+  tbl <- as_grouped_data(tbl[, target_cols], groups = "metric",
+                         columns = target_cols[!(target_cols %in% "metric")])
+  
+  # Define visible columns
+  
+  visible_cols <- target_cols[!(target_cols %in% "metric")]
+
+  # Create flextable
+  
+  tbl_ft <- as_flextable(tbl, col_keys = visible_cols) |>
+    set_table_properties(align = "left") |>
+    
+    set_caption(as_paragraph(as_i(title)), word_stylename = "heading 1",
+                fp_p = fp_par(padding.left = 0, padding.right = 0),
+                align_with_table = FALSE) |>
+    
+    align(align = "center", part = "header") |>
+    align(align = "center", part = "body") |>
+    align(j = left_align_body_cols, align = "left", part = "body") |>
+    align(align = "left", part = "footer") |>
+    
+    align(j = 1, i = ~ !is.na(metric), align = "center", part = "body") |>
+    hline(j = 1, i = ~ !is.na(metric), part = "body") |>
+    bold(j = 1,  i = ~ !is.na(metric), part = "body") |>
+    
+    set_header_labels(x_var = "MDIB Measure",
+                      y_var = "Validity Measure",
+                      ci    = "95% CI") |>
+    compose(j = "r",  part = "header", value = as_paragraph(as_i("r"))) |>
+    compose(j = "t",  part = "header", value = as_paragraph(as_i("t"))) |>
+    compose(j = "df", part = "header", value = as_paragraph(as_i("df"))) |>
+    compose(j = "p",  part = "header", value = as_paragraph(as_i("p"))) |>
+    compose(j = "n",  part = "header", value = as_paragraph(as_i("n"))) |>
+    
+    labelizor(part = "body",
+              labels = c("mdib_neg_9_int_m.baseline" = "Negative Internal Bias",
+                         "mdib_neg_9_ext_m.baseline" = "Negative External Bias",
+                         "bbsiq_neg_int_m.baseline"  = "Negative Internal Bias (BBSIQ)",
+                         "bbsiq_neg_ext_m.baseline"  = "Negative External Bias (BBSIQ)",
+                         "asi_m.baseline"            = "Overall Anxiety Sensitivity (ASI)",
+                         "asi_red_phy_m.baseline"    = "Anxiety Sensitivity-Physical (2 ASI items)",
+                         "asi_red_cog_m.baseline"    = "Anxiety Sensitivity-Cognitive (2 ASI items)",
+                         "asi_red_soc_m.baseline"    = "Anxiety Sensitivity-Social (2 ASI items)",
+                         "bfne2_8_m.baseline"        = "Fear of Negative Evaluation (8 BFNE-II items)",
+                         "auditc_m.baseline"         = "Alcohol Use (AUDIT-C)",
+                         "neuroqol_anx_m.baseline"   = "Anxiety Symptoms (Neuro-QoL Anxiety)",
+                         "neuroqol_anx_m.followup"   = "Anxiety Symptoms (Neuro-QoL Anxiety)",
+                         "sads_m.baseline"           = "Social Avoidance and Distress (SADS)",
+                         "sads_red_m.followup"       = "Social Avoidance and Distress (8 SADS items)")) |>
+
+    add_footer_lines(gen_note) |>
+    autofit()
+  
+  return(tbl_ft)
+}
+
+# Define general note
+
+gen_note <- as_paragraph_md("*Note.* MDIB measures (4 negative ratings for internal threats; 5 negative ratings for external threats) and convergent, discriminant, and concurrent validity measures were assessed at baseline; predictive validity measures were assessed at 2-week follow-up. MDIB = Movement Disorders Interpretation Bias Scale; BBSIQ = Brief Body Sensations Interpretation Questionnaire; ASI = Anxiety Sensitivity Index; BFNE-II = Brief Fear of Negative Evaluation-II Scale; AUDIT-C = Alcohol Use Disorders Identification Test-Consumption Items; Neuro-QoL Anxiety = Neuro-QoL Short Form for Anxiety; SADS = Social Avoidance and Distress Scale.")
+
+# Run function
+
+tbl_external_validity_ft <- format_tbl_external_validity(tbl_external_validity, gen_note,
+  "Associations of MDIB Negative Bias Measures With Convergent, Discriminant, Concurrent, and Predictive Validity Measures")
+
+# ---------------------------------------------------------------------------- #
+# Format table for incremental validity ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to format incremental validity table
+
+format_tbl_incremental_validity <- function(tbl_incremental_validity, gen_note, title) {
+  tbl <- tbl_incremental_validity
+  
+  left_align_body_cols <- c("Outcome", "Model", "Effect")
+  
+  target_cols <- c("metric", "Outcome", "Model", "Effect", "b (SE)", "t", "p", 
+                   "95% CI", "r", "sp_r", "sig")
+  
+  # Restructure data as grouped data for table spanners based on "metric"
+  
+  tbl <- as_grouped_data(tbl[, target_cols], groups = "metric",
+                         columns = target_cols[!(target_cols %in% "metric")])
+  
+  # Define visible columns
+  
+  visible_cols <- target_cols[!(target_cols %in% c("metric", "sig"))]
+  
+  # Create flextable
+  
+  tbl_ft <- as_flextable(tbl, col_keys = visible_cols) |>
+    set_table_properties(align = "left") |>
+    
+    set_caption(as_paragraph(as_i(title)), word_stylename = "heading 1",
+                fp_p = fp_par(padding.left = 0, padding.right = 0),
+                align_with_table = FALSE) |>
+    
+    align(align = "center", part = "header") |>
+    align(align = "center", part = "body") |>
+    align(j = left_align_body_cols, align = "left", part = "body") |>
+    align(align = "left", part = "footer") |>
+    
+    align(j = 1, i = ~ !is.na(metric), align = "center", part = "body") |>
+    hline(j = 1, i = ~ !is.na(metric), part = "body") |>
+    bold(j = 1,  i = ~ !is.na(metric), part = "body") |>
+    
+    set_header_labels(x_var = "MDIB Measure",
+                      y_var = "Validity Measure",
+                      ci    = "95% CI") |>
+    compose(j = "b (SE)", part = "header", 
+            value = as_paragraph(as_i("b"), " (", as_i("SE"), ")")) |>
+    compose(j = "t",    part = "header", value = as_paragraph(as_i("t"))) |>
+    compose(j = "p",    part = "header", value = as_paragraph(as_i("p"))) |>
+    compose(j = "r",    part = "header", value = as_paragraph(as_i("r"))) |>
+    compose(j = "sp_r", part = "header", value = as_paragraph(as_i("r"), as_sub("sp"))) |>
+    
+    labelizor(part = "body",
+              labels = c("mdib_neg_9_int_m.baselinec" = "Neg. Int. Bias (MDIB)",
+                         "mdib_neg_9_ext_m.baselinec" = "Neg. Ext. Bias (MDIB)",
+                         "bbsiq_neg_int_m.baselinec"  = "Neg. Int. Bias (BBSIQ)",
+                         "bbsiq_neg_ext_m.baselinec"  = "Neg. Ext. Bias (BBSIQ)",
+                         "neuroqol_anx_m.baseline"   = "Anxiety Symptoms (Neuro-QoL Anxiety)",
+                         "neuroqol_anx_m.followup"   = "Anxiety Symptoms (Neuro-QoL Anxiety)",
+                         "sads_m.baseline"           = "Social Avoid./Distress (SADS)",
+                         "sads_red_m.followup"       = "Social Avoid./Distress (8 SADS items)",
+                         "NA"                        = "")) |>
+    
+    add_footer_lines(gen_note) |>
+    autofit()
+  
+  return(tbl_ft)
+}
+
+# Define general note
+
+gen_note <- as_paragraph_md("*Note.* Key rows testing the incremental validity of the MDIB are in boldface. MDIB measures (4 negative ratings for internal threats; 5 negative ratings for external threats), BBSIQ measures, and concurrent validity outcomes were assessed at baseline; predictive validity outcomes were assessed at 2-week follow-up. MDIB = Movement Disorders Interpretation Bias Scale; BBSIQ = Brief Body Sensations Interpretation Questionnaire; Neuro-QoL Anxiety = Neuro-QoL Short Form for Anxiety; SADS = Social Avoidance and Distress Scale.")
+
+# Run function
+
+tbl_incremental_validity_ft <- 
+  format_tbl_incremental_validity(tbl_incremental_validity, gen_note,
+  "Hierarchical Multiple Regression Models Testing Incremental Concurrent and Predictive Validity of MDIB Negative Bias Measures")
+
+# ---------------------------------------------------------------------------- #
+# Write external validity tables to MS Word ----
+# ---------------------------------------------------------------------------- #
+
+# Write external validity tables (note: "flextable" seems to have a bug in which 
+# blank page is at end of doc)
+
+external_validity_tbls <- list(tbl_external_validity_ft, tbl_incremental_validity_ft)
+
+external_validity_tbls_orientations <- c("l", "l")
+external_validity_tbls_numbers      <- c("3", "4")
+
+doc <- read_docx()
+doc <- body_set_default_section(doc, psect_prop)
+
+for (i in 1:length(external_validity_tbls)) {
+  doc <- body_add_fpar(doc, fpar(ftext(paste0("Table ", external_validity_tbls_numbers[[i]]),
+                                       prop = text_prop_bold)))
+  doc <- body_add_par(doc, "")
+  
+  doc <- body_add_flextable(doc, external_validity_tbls[[i]], align = "left")
+  
+  if (external_validity_tbls_orientations[[i]] == "p") {
+    doc <- body_end_block_section(doc, block_section(psect_prop))
+  } else if (external_validity_tbls_orientations[[i]] == "l") {
+    doc <- body_end_block_section(doc, block_section(lsect_prop))
+  }
+}
+
+external_validity_tbl_path <- "./results/external_validity/tables/"
+
+dir.create(external_validity_tbl_path, recursive = TRUE)
+
+print(doc, target = paste0(external_validity_tbl_path, "external_validity_tbls.docx"))
