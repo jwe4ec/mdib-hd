@@ -17,10 +17,10 @@ To run the scripts, create a parent folder (with any desired name, indicated by 
 ```
 .                                # Parent folder (i.e., working directory)
 ├── data                         # Data subfolder
-├── ├── bot_cleaned              # 1 CSV file from OSF project
+├── └── bot_cleaned              # 1 CSV file from OSF project
 └── code                         # Code subfolder
 ```
 
-Put the file `final HD Aim 1 data_deid_2023-01-09_1525_v2_further_manually_redacted.csv` from OSF in the `bot_cleaned` folder, and put the scripts in the `code` folder. The scripts are to be run in the order listed. At the top of each script, restart R (CTRL+SHIFT+F10 on Windows) and set your working directory to the parent folder (CTRL+SHIFT+H).
+Put the CSV file from OSF above in the `bot_cleaned` folder, and put the scripts in the `code` folder. The scripts are to be run in the order listed. At the top of each script, restart R (CTRL+SHIFT+F10 on Windows) and set your working directory to the parent folder (CTRL+SHIFT+H).
 
 The scripts will create additional folders within the `data` folder, and a `results` folder with various subfolders. For the final structure of the `data` and `results` folders (and files outputted to these folders), see the OSF project.
