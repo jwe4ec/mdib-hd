@@ -12,7 +12,7 @@ Bot responses were already cleaned from this file by Dr. Gibson and a graduate r
 
 # Code
 
-To run the scripts, create a parent folder (with any desired name, indicated by . below) with two subfolders: `data/bot_cleaned` and `code`. The working directory must be set to the parent folder for the scripts to import and export files correctly using relative file paths.
+To run the scripts, create a parent folder (with any desired name, indicated by `.` below) with two subfolders: `data/bot_cleaned` and `code`. The working directory must be set to the parent folder for the scripts to import and export files correctly using relative file paths.
 
 ```
 .                                # Parent folder (i.e., working directory)
