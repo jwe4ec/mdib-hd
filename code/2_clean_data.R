@@ -34,7 +34,8 @@ groundhog_day <- version_control()
 
 # Import HD MDIB data from RedCap
 
-mdib_hd_dat <- read.csv("./data/bot_cleaned/final HD Aim 1 data_deid_2023-01-09_1525_v2.csv")
+mdib_hd_dat <- 
+  read.csv("./data/bot_cleaned/final HD Aim 1 data_deid_2023-01-09_1525_v2_further_manually_redacted.csv")
 
 # ---------------------------------------------------------------------------- #
 # Remove blank rows ----
