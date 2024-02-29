@@ -6,9 +6,9 @@ Author: Jeremy W. Eberle
 
 # Data
 
-The present scripts import `final HD Aim 1 data_deid_2023-01-09_1525_v2_further_manually_redacted.csv` stored in the `data/bot_cleaned` folder of the OSF project. The data were collected 6/2021-1/2023 by Dr. Jessie Gibson via RedCap for the MDIB Development Study.
+The present scripts import `final HD Aim 1 data_deid_OSF.csv` stored in the `data/bot_cleaned` folder of the OSF project. The data were collected 6/2021-1/2023 by Dr. Jessie Gibson via RedCap for the MDIB Development Study. The file was obtained from Dr. Gibson on 2/28/2024.
 
-Bot responses were already cleaned from this file by Dr. Gibson and a graduate research assistant, and further redactions to certain cells of this file were manually applied by replacing certain content with "REDACTED". For the original raw data, please contact Dr. Gibson.
+Bot responses were already cleaned from this file by Dr. Gibson and a graduate research assistant. Dr. Gibson also removed certain columns for deidentification or irrelevance to the present manuscript. For the original raw data, please contact Dr. Gibson.
 
 # Code
 
