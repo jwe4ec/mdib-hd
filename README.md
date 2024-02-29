@@ -6,9 +6,9 @@ Author: Jeremy W. Eberle
 
 # Data
 
-The present scripts import `final HD Aim 1 data_deid_2023-01-09_1525_v2_further_manually_redacted.csv` stored in the `data/bot_cleaned` folder of the OSF project. The data were collected 6/2021-1/2023 by Dr. Jessie Gibson via RedCap for the MDIB Development Study.
+The present scripts import `final HD Aim 1 data_deid_OSF.csv` stored in the `data/bot_cleaned` folder of the OSF project. The data were collected 6/2021-1/2023 by Dr. Jessie Gibson via RedCap for the MDIB Development Study. The file was obtained from Dr. Gibson on 2/28/2024.
 
-Bot responses were already cleaned from this file by Dr. Gibson and a graduate research assistant, and further redactions to certain cells of this file were manually applied by replacing certain content with "REDACTED". For the original raw data, please contact Dr. Gibson.
+Bot responses were already cleaned from this file by Dr. Gibson and a graduate research assistant. Dr. Gibson also removed certain columns for deidentification or irrelevance to the present manuscript. For the original raw data, please contact Dr. Gibson.
 
 # Code
 
@@ -24,8 +24,3 @@ To run the scripts, create a parent folder (with any desired name, indicated by 
 Put the CSV file from OSF above in the `bot_cleaned` folder, and put the scripts in the `code` folder. The scripts are to be run in the order listed. At the top of each script, restart R (CTRL+SHIFT+F10 on Windows) and set your working directory to the parent folder (CTRL+SHIFT+H).
 
 The scripts will create additional folders within the `data` folder, and a `results` folder with various subfolders. For the final structure of the `data` and `results` folders (and files outputted to these folders), see the OSF project.
-
-# TODOs
-
-- Check final name of CSV file above
-- Reupload final CSV file above and contents of `data/further_clean` to OSF
