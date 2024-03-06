@@ -258,9 +258,9 @@ save(dem_dat, file = "./data/further_clean/dem_dat.RData")
 # Create demographics table ----
 # ---------------------------------------------------------------------------- #
 
-# Define function to compute descriptives
+# Define function to compute demographic descriptives
 
-compute_desc <- function(df, exclude_fct_cols) {
+compute_dem_desc <- function(df, exclude_fct_cols) {
   # Compute sample size
   
   n <- data.frame(label = "n",
@@ -341,8 +341,8 @@ compute_desc <- function(df, exclude_fct_cols) {
 
 exclude_fct_cols <- c("country", "study_awareness", "survey_help")
 
-dem_tbl     <- compute_desc(dem_dat, exclude_fct_cols)
-dem_tbl_ext <- compute_desc(dem_dat, NULL)
+dem_tbl     <- compute_dem_desc(dem_dat, exclude_fct_cols)
+dem_tbl_ext <- compute_dem_desc(dem_dat, NULL)
 
 # Save table to CSV
 
