@@ -187,6 +187,12 @@ dem_dat$cag_repeats_numeric[dem_dat$cag_repeats_numeric %in%
                               c("Not applicable", "Unknown")] <- NA
 dem_dat$cag_repeats_numeric <- as.numeric(dem_dat$cag_repeats_numeric)
 
+# Compute CAG-Age-Product (CAP) score = age * (CAG repeats – L) / K, where L is 
+# a centering constant and K is a scaling constant. We use L = 30 and K = 6.49 per 
+# Warner et al. (2022; https://doi.org/10.3233/JHD-210475)
+
+dem_dat$cap_score <- dem_dat$age * (dem_dat$cag_repeats_numeric - 30) / 6.49
+
 # Clean country (though we will not include it in formatted table)
 
   # Recode variations of United States
@@ -258,19 +264,28 @@ save(dem_dat, file = "./data/further_clean/dem_dat.RData")
 # Create demographics table ----
 # ---------------------------------------------------------------------------- #
 
-# Define function to compute descriptives
+# Define function to compute demographic descriptives
 
-compute_desc <- function(df, exclude_fct_cols) {
+compute_dem_desc <- function(df, exclude_fct_cols) {
   # Compute sample size
   
   n <- data.frame(label = "n",
                   value = length(df$record_id))
   
-  # Compute mean and standard deviation for numeric variables
+  # Compute mean and standard deviation for numeric variables (define labels for
+  # CAP score separately for later use)
   
-  vars <- c("age", "cag_repeats_numeric")
+  vars <- c("age", "cag_repeats_numeric", "cap_score")
+  
   var_labels <- c("Age", "CAG Repeats")
+  var_labels_cap_score <- "CAG-Age-Product (CAP)"
+  var_labels <- c(var_labels, var_labels_cap_score)
+  
   unit_labels <- c("Years: M (SD)", "Number of repeats: M (SD)")
+  unit_labels_cap_score <- "Score: M (SD)"
+  unit_labels <- c(unit_labels, unit_labels_cap_score)
+  
+  cap_score_labels <- c(var_labels_cap_score, unit_labels_cap_score)
   
   num_res <- data.frame()
   
@@ -286,6 +301,12 @@ compute_desc <- function(df, exclude_fct_cols) {
                                                ")")))
     num_res <- rbind(num_res, tmp_res)
   }
+  
+  # Separate CAP Score from other numeric variables so that "num_res_unk" below
+  # can later be inserted between "num_res_non_cap_score" and "num_res_cap_score"
+  
+  num_res_non_cap_score <- num_res[!(num_res$label %in% cap_score_labels), ]
+  num_res_cap_score     <- num_res[num_res$label %in% cap_score_labels, ]
   
   # Compute count and percentage "Unknown" for "cag_repeats"
   
@@ -332,7 +353,7 @@ compute_desc <- function(df, exclude_fct_cols) {
   
   # Combine results
   
-  res <- rbind(n, num_res, num_res_unk, fct_res)
+  res <- rbind(n, num_res_non_cap_score, num_res_unk, num_res_cap_score, fct_res)
   
   return(res)
 }
@@ -341,8 +362,8 @@ compute_desc <- function(df, exclude_fct_cols) {
 
 exclude_fct_cols <- c("country", "study_awareness", "survey_help")
 
-dem_tbl     <- compute_desc(dem_dat, exclude_fct_cols)
-dem_tbl_ext <- compute_desc(dem_dat, NULL)
+dem_tbl     <- compute_dem_desc(dem_dat, exclude_fct_cols)
+dem_tbl_ext <- compute_dem_desc(dem_dat, NULL)
 
 # Save table to CSV
 
@@ -369,7 +390,7 @@ format_dem_tbl <- function(dem_tbl, gen_note, title) {
   dem_tbl$label_md <- dem_tbl$label
   
   rows_no_indent <- dem_tbl$label_md == "n" | 
-    grepl("\\b(Age|Gender|Sex Assigned at Birth|Race|Ethnicity|Education|Employment Status|Relationship Status|Living Alone|CAG Repeats)\\b",
+    grepl("\\b(Age|Gender|Sex Assigned at Birth|Race|Ethnicity|Education|Employment Status|Relationship Status|Living Alone|CAG Repeats|CAG-Age-Product (CAP))\\b",
           dem_tbl$label_md)
   rows_indent <- !rows_no_indent
   
@@ -415,7 +436,12 @@ format_dem_tbl <- function(dem_tbl, gen_note, title) {
                          "Working full-time" = "Working full time",
                          "Working part-time" = "Working part time")) |>
     
-    add_footer_lines(gen_note) |>
+    # add_footer_lines(gen_note) |>
+    
+    footnote(j = 1, i = 7,
+             value = as_paragraph_md(footnote),
+             ref_symbols = " a",
+             part = "body") |>
     
     autofit()
 }
@@ -423,6 +449,8 @@ format_dem_tbl <- function(dem_tbl, gen_note, title) {
 # Define general notes
 
 gen_note <- as_paragraph_md("")
+
+footnote <- "\\ CAP scores were computed for the 61 participants with known CAG repeats as age*(CAG repeats - L)/K, where L (centering constant) is 30 and K (scaling constant) is 6.49 per Warner et al. (2022)."
 
 # Run function
 

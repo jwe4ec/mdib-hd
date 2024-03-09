@@ -44,3 +44,43 @@ load("./data/further_clean/mdib_hd_dat2_short_wide.RData")
 
 hist(mdib_hd_dat2_short_wide$neuroqol_anx_m.baseline)
 hist(mdib_hd_dat2_short_wide$neuroqol_anx_m.followup)
+
+# ---------------------------------------------------------------------------- #
+# Compute NeuroQoL-Anxiety total score ----
+# ---------------------------------------------------------------------------- #
+
+mdib_hd_dat2_short_wide$neuroqol_anx_tot.baseline <- mdib_hd_dat2_short_wide$neuroqol_anx_m.baseline*8
+mdib_hd_dat2_short_wide$neuroqol_anx_tot.followup <- mdib_hd_dat2_short_wide$neuroqol_anx_m.followup*8
+
+# ---------------------------------------------------------------------------- #
+# Compute selected descriptives ----
+# ---------------------------------------------------------------------------- #
+
+# Define function for computing sample size, summary, and standard deviation
+
+compute_desc <- function(df, var) {
+  n <- sum(!is.na(df[, var]))
+  summary <- round(summary(df[, var]), 2)
+  sd <- format(round(sd(df[, var]), 2),
+               nsmall = 2, trim = TRUE)
+  
+  cat("Variable:", var, "\n\n")
+  
+  cat("Summary: ", "\n")
+  print(summary)
+  cat("\n")
+  
+  cat("SD =", sd, "\n")
+  cat("n =", n, "\n\n")
+}
+
+# Run function and export results
+
+dir.create("./results/descriptives")
+
+sink(file = "./results/descriptives/descriptives.txt")
+compute_desc(mdib_hd_dat2_short_wide, "neuroqol_anx_m.baseline")
+compute_desc(mdib_hd_dat2_short_wide, "neuroqol_anx_tot.baseline")
+compute_desc(mdib_hd_dat2_short_wide, "mdib_neg_9_int_m.baseline")
+compute_desc(mdib_hd_dat2_short_wide, "mdib_neg_9_ext_m.baseline")
+sink()
