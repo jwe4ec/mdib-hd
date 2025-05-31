@@ -202,6 +202,9 @@ mdib_items_rename <-
     "mdib_neg_ext_neighbor_5a", "mdib_neg_int_email_6b",    "mdib_neg_ext_exercise_7a",   "mdib_neg_int_medication_8b",
     "mdib_neg_ext_walk_9c",     "mdib_neg_ext_job_10a",     "mdib_neg_ext_stumble_11c",   "mdib_neg_int_cough_12b")
 
+item_number <- sub(".*_(\\d+[a-z])$", "\\1", mdib_items_rename) # Get item number
+item_number <- sub("^([0-9])([a-z])$", "0\\1\\2", item_number)  # Pad single-digit numbers with leading 0
+
 meaning <-
   c("ben", "ben", "ben", "ben",
     "ben", "ben", "ben", "ben",
@@ -226,6 +229,7 @@ domain <-
 
 mdib_item_map <- data.frame(items        = mdib_items,
                             items_rename = mdib_items_rename,
+                            item_number  = item_number,
                             meaning      = meaning,
                             domain       = domain)
 
@@ -342,6 +346,10 @@ mdib_dat_items <- list(mdib_neg       = mdib_neg_items,
 # Recode "prefer not to answer" values ----
 # ---------------------------------------------------------------------------- #
 
+# No MDIB items are already NA (i.e., any missingness is due to PNA)
+
+sum(is.na(mdib_hd_dat[, c(mdib_dat_items$mdib_neg, mdib_dat_items$mdib_ben)])) == 0
+
 # Recode "prefer not to answer" (coded as 99) as NA
 
 target_items <- c(mdib_dat_items$mdib_neg,
@@ -406,13 +414,55 @@ mdib_hd_dat$sads_red_m[is.nan(mdib_hd_dat$sads_red_m)]             <- NA
 mdib_hd_dat$auditc_m[is.nan(mdib_hd_dat$auditc_m)]                 <- NA
 
 # ---------------------------------------------------------------------------- #
+# Create table of item-level missingness for MDIB at baseline ----
+# ---------------------------------------------------------------------------- #
+
+# Restrict to MDIB items at baseline
+
+mdib_items <- c(mdib_dat_items$mdib_neg, mdib_dat_items$mdib_ben)
+
+mdib_bl <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1", mdib_items]
+
+# Order columns by item number
+
+mdib_item_map <- mdib_item_map[order(mdib_item_map$item_number), ]
+
+mdib_bl <- mdib_bl[match(mdib_item_map$items_rename, names(mdib_bl))]
+
+# Compute number and proportion of participants (out of 70) missing each item
+
+(n <- nrow(mdib_bl)) == 70
+
+item_n_missing      <- colSums(is.na(mdib_bl))
+item_perc_missing   <- format(round((item_n_missing / n) * 100, 1),
+                              nsmall = 1, trim = TRUE)
+item_n_perc_missing <- paste0(item_n_missing, " (", item_perc_missing, ")")
+
+mdib_bl_item_missing_tbl <- data.frame(domain         = mdib_item_map$domain,
+                                       item           = names(mdib_bl),
+                                       meaning        = mdib_item_map$meaning,
+                                       n_missing      = item_n_missing,
+                                       n_perc_missing = item_n_perc_missing)
+
+  # Restrict to items not answered by at least 1 participant
+
+mdib_bl_item_missing_tbl <- mdib_bl_item_missing_tbl[mdib_bl_item_missing_tbl$n_missing > 0, ]
+
+row.names(mdib_bl_item_missing_tbl) <- 1:nrow(mdib_bl_item_missing_tbl)
+
+# Export table to CSV
+
+missing_rates_path <- "./results/missing_rates/"
+dir.create(missing_rates_path)
+
+write.csv(mdib_bl_item_missing_tbl, paste0(missing_rates_path, "mdib_bl_item_missing_tbl.csv"), row.names = FALSE)
+
+# ---------------------------------------------------------------------------- #
 # Remove participants with incomplete MDIB data at baseline ----
 # ---------------------------------------------------------------------------- #
 
 # Remove 5 participants with incomplete MDIB data at baseline, leaving an overall 
 # analysis sample of 65 participants
-
-mdib_items <- c(mdib_dat_items$mdib_neg, mdib_dat_items$mdib_ben)
 
 incompl_mdib_bl_data_ids <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1" &
                                           rowSums(is.na(mdib_hd_dat[, mdib_items])) > 0, "record_id"]
