@@ -65,9 +65,12 @@ save(mdib_hd_dat2, file = "./data/further_clean/mdib_hd_dat2.RData")
 
 # Clean age (already computed from "date_of_birth" and "date")
 
-  # Note: No values are missing, and range is reasonable
+  # Note: No values are missing
 
 sum(is.na(dem_dat$age)) == 0
+
+  # Compute range (which is reasonable; added to demographics table manually)
+
 range(dem_dat$age) == c(21, 73)
 
 # Clean race
@@ -187,11 +190,19 @@ dem_dat$cag_repeats_numeric[dem_dat$cag_repeats_numeric %in%
                               c("Not applicable", "Unknown")] <- NA
 dem_dat$cag_repeats_numeric <- as.numeric(dem_dat$cag_repeats_numeric)
 
+  # Compute range (added to demographics table manually)
+
+range(dem_dat$cag_repeats_numeric, na.rm = TRUE) == c(39, 53)
+
 # Compute CAG-Age-Product (CAP) score = age * (CAG repeats – L) / K, where L is 
 # a centering constant and K is a scaling constant. We use L = 30 and K = 6.49 per 
 # Warner et al. (2022; https://doi.org/10.3233/JHD-210475)
 
 dem_dat$cap_score <- dem_dat$age * (dem_dat$cag_repeats_numeric - 30) / 6.49
+
+  # Compute range (added to demographics table manually)
+
+round(range(dem_dat$cap_score, na.rm = TRUE), 2) == c(38.83, 145.61)
 
 # Clean country (though we will not include it in formatted table)
 
