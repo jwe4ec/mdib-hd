@@ -203,7 +203,7 @@ mdib_items_rename <-
     "mdib_neg_ext_walk_9c",     "mdib_neg_ext_job_10a",     "mdib_neg_ext_stumble_11c",   "mdib_neg_int_cough_12b")
 
 item_number <- sub(".*_(\\d+[a-z])$", "\\1", mdib_items_rename) # Get item number
-item_number <- sub("^([0-9])([a-z])$", "0\\1\\2", item_number)  # Pad single-digit numbers with leading 0
+item_number <- sub("^([0-9])([a-z])$", "0\\1\\2", item_number)  # Pad 1-digit numbers with leading 0
 
 meaning <-
   c("ben", "ben", "ben", "ben",
@@ -343,12 +343,71 @@ mdib_dat_items <- list(mdib_neg       = mdib_neg_items,
                        auditc         = auditc_items)
 
 # ---------------------------------------------------------------------------- #
-# Recode "prefer not to answer" values ----
+# Inspect NA values ----
 # ---------------------------------------------------------------------------- #
 
-# No MDIB items are already NA (i.e., any missingness is due to PNA)
+# No MDIB, BBSIQ, or Neuro-QoL Anxiety items are already NA at baseline or
+# follow-up (i.e., any missingness is due to PNA)
 
-sum(is.na(mdib_hd_dat[, c(mdib_dat_items$mdib_neg, mdib_dat_items$mdib_ben)])) == 0
+sum(is.na(mdib_hd_dat[, c(mdib_dat_items$mdib_neg, mdib_dat_items$mdib_ben,
+                          mdib_dat_items$bbsiq_neg, mdib_dat_items$bbsiq_ben,
+                          mdib_dat_items$neuroqol_anx)])) == 0
+
+# No ASI, BFNE-2, or SADS items are already NA at baseline
+
+sum(is.na(mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1", 
+                      c(mdib_dat_items$asi,
+                        mdib_dat_items$bfne2,
+                        mdib_dat_items$sads)])) == 0
+
+# Some AUDIT-C items are already NA at baseline (reasons below)
+
+auditc_bl <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1",
+                         c("record_id", mdib_dat_items$auditc)]
+
+n_obs_na_auditc <- sum(is.na(auditc_bl[, mdib_dat_items$auditc]))
+n_obs_na_auditc == 60
+
+  # TODO: 1. Was not administered to 12 participants? (asked Jessie on 5/31/25)
+
+rows_all_items_na_auditc <- rowSums(!is.na(auditc_bl[, mdib_dat_items$auditc])) == 0
+n_rows_all_items_na_auditc <- sum(rows_all_items_na_auditc)
+n_rows_all_items_na_auditc == 12
+
+n_rows_all_items_na_auditc * length(mdib_dat_items$auditc) == 36
+
+relevant_ids <- auditc_bl[rows_all_items_na_auditc, "record_id"]
+
+# View(auditc_bl[auditc_bl$record_id %in% relevant_ids, ])
+
+
+
+
+
+  # 2. REDCap skipped Items 2-3 (not applicable) when Item 1 was 0 ("never")
+
+sum(is.na(auditc_bl[!is.na(auditc_bl$alcohol_audit_c_1) & auditc_bl$alcohol_audit_c_1 == 0,
+                    c("alcohol_audit_c_2", "alcohol_audit_c_3")])) == 24
+
+# Some reduced SADS items are already NA at follow-up (reason below)
+
+sads_red_fu <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == "followup_arm_1", 
+                           c("record_id", mdib_dat_items$sads_red)]
+
+n_obs_na_sads_red <- sum(is.na(sads_red_fu[, mdib_dat_items$sads_red]))
+n_obs_na_sads_red == 184
+
+  # Was not administered to 23 participants
+
+rows_all_items_na_sads_red <- rowSums(!is.na(sads_red_fu[, mdib_dat_items$sads_red])) == 0
+n_rows_all_items_na_sads_red <- sum(rows_all_items_na_sads_red)
+n_rows_all_items_na_sads_red == 23
+
+n_rows_all_items_na_sads_red * length(mdib_dat_items$sads_red) == n_obs_na_sads_red
+
+# ---------------------------------------------------------------------------- #
+# Recode "prefer not to answer" values ----
+# ---------------------------------------------------------------------------- #
 
 # Recode "prefer not to answer" (coded as 99) as NA
 
