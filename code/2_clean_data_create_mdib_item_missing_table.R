@@ -353,7 +353,8 @@ sum(is.na(mdib_hd_dat[, c(mdib_dat_items$mdib_neg, mdib_dat_items$mdib_ben,
                           mdib_dat_items$bbsiq_neg, mdib_dat_items$bbsiq_ben,
                           mdib_dat_items$neuroqol_anx)])) == 0
 
-# No ASI, BFNE-2, or SADS items are already NA at baseline
+# No ASI, BFNE-2, or SADS items are already NA at baseline (i.e., any missingness 
+# is due to PNA))
 
 sum(is.na(mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1", 
                       c(mdib_dat_items$asi,
@@ -388,6 +389,12 @@ relevant_ids <- auditc_bl[rows_all_items_na_auditc, "record_id"]
 
 sum(is.na(auditc_bl[!is.na(auditc_bl$alcohol_audit_c_1) & auditc_bl$alcohol_audit_c_1 == 0,
                     c("alcohol_audit_c_2", "alcohol_audit_c_3")])) == 24
+
+    # TODO: Given this, consider recoding Items 2-3 as 0 when Item 1 is 0
+
+
+
+
 
 # Some reduced SADS items are already NA at follow-up (reason below)
 
