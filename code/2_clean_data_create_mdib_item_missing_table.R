@@ -346,15 +346,13 @@ mdib_dat_items <- list(mdib_neg       = mdib_neg_items,
 # Inspect NA values ----
 # ---------------------------------------------------------------------------- #
 
-# No MDIB, BBSIQ, or Neuro-QoL Anxiety items are already NA at baseline or
-# follow-up (i.e., any missingness is due to PNA)
+# No MDIB, BBSIQ, or Neuro-QoL Anxiety items are already NA at baseline or follow-up
 
 sum(is.na(mdib_hd_dat[, c(mdib_dat_items$mdib_neg, mdib_dat_items$mdib_ben,
                           mdib_dat_items$bbsiq_neg, mdib_dat_items$bbsiq_ben,
                           mdib_dat_items$neuroqol_anx)])) == 0
 
-# No ASI, BFNE-2, or SADS items are already NA at baseline (i.e., any missingness 
-# is due to PNA))
+# No ASI, BFNE-2, or SADS items are already NA at baseline
 
 sum(is.na(mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1", 
                       c(mdib_dat_items$asi,
@@ -419,8 +417,31 @@ mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1" &
             c("alcohol_audit_c_2", "alcohol_audit_c_3")] <- 0
 
 # ---------------------------------------------------------------------------- #
+# Identify participants with incomplete MDIB data at baseline   ----
+# ---------------------------------------------------------------------------- #
+
+# Identify such participants (because no MDIB items are already NA [see above], 
+# identify those that are PNA [coded as 99]) but do not remove them from overall 
+# dataset until end of this script
+
+mdib_items <- c(mdib_dat_items$mdib_neg, mdib_dat_items$mdib_ben)
+
+# incompl_mdib_bl_data_ids <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1" &
+#                                           rowSums(is.na(mdib_hd_dat[, mdib_items])) > 0, "record_id"]
+
+incompl_mdib_bl_data_ids <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1" &
+                                          rowSums(mdib_hd_dat[, mdib_items] == 99) > 0, "record_id"]
+
+length(incompl_mdib_bl_data_ids) == 5
+
+# ---------------------------------------------------------------------------- #
 # Compute scale-level missing data rates due to "prefer not to answer" for all items ----
 # ---------------------------------------------------------------------------- #
+
+# Remove participants with incomplete MDIB data at baseline for this computation,
+# which needs to be done before "prefer not to answer" values are recoded as NA
+
+temp_dat <- mdib_hd_dat[!(mdib_hd_dat$record_id %in% incompl_mdib_bl_data_ids), ]
 
 # Define function to compute number of scale scores across specified time points
 # that will be missing due to "prefer not to answer" (coded as 99) for all items
@@ -448,19 +469,19 @@ sink(file = paste0(missing_rates_path, "all_item_missingness.txt"))
 
 cat("Number of Scale Scores Missing Due to 'Prefer Not to Answer' for All Items:", "\n\n")
 
-compute_all_item_missingness(mdib_hd_dat, "mdib_neg_9_int_m" , mdib_dat_items$mdib_neg_9_int, c("baseline_arm_1", "followup_arm_1"))
-compute_all_item_missingness(mdib_hd_dat, "mdib_neg_9_ext_m" , mdib_dat_items$mdib_neg_9_ext, c("baseline_arm_1", "followup_arm_1"))
-compute_all_item_missingness(mdib_hd_dat, "bbsiq_neg_int_m " , mdib_dat_items$bbsiq_neg_int,  c("baseline_arm_1", "followup_arm_1"))
-compute_all_item_missingness(mdib_hd_dat, "bbsiq_neg_ext_m " , mdib_dat_items$bbsiq_neg_ext,  c("baseline_arm_1", "followup_arm_1"))
-compute_all_item_missingness(mdib_hd_dat, "asi_m"            , mdib_dat_items$asi,            "baseline_arm_1")
-compute_all_item_missingness(mdib_hd_dat, "asi_red_phy_m"    , mdib_dat_items$asi_red_phy,    "baseline_arm_1")
-compute_all_item_missingness(mdib_hd_dat, "asi_red_cog_m"    , mdib_dat_items$asi_red_cog,    "baseline_arm_1")
-compute_all_item_missingness(mdib_hd_dat, "asi_red_soc_m"    , mdib_dat_items$asi_red_soc,    "baseline_arm_1")
-compute_all_item_missingness(mdib_hd_dat, "bfne2_8_m"        , mdib_dat_items$bfne2_8,        "baseline_arm_1")
-compute_all_item_missingness(mdib_hd_dat, "neuroqol_anx_m"   , mdib_dat_items$neuroqol_anx,   c("baseline_arm_1", "followup_arm_1"))
-compute_all_item_missingness(mdib_hd_dat, "sads_m"           , mdib_dat_items$sads,           "baseline_arm_1")
-compute_all_item_missingness(mdib_hd_dat, "sads_red_m"       , mdib_dat_items$sads_red,       "followup_arm_1")
-compute_all_item_missingness(mdib_hd_dat, "auditc_m"         , mdib_dat_items$auditc,         "baseline_arm_1")
+compute_all_item_missingness(temp_dat, "mdib_neg_9_int_m" , mdib_dat_items$mdib_neg_9_int, c("baseline_arm_1", "followup_arm_1"))
+compute_all_item_missingness(temp_dat, "mdib_neg_9_ext_m" , mdib_dat_items$mdib_neg_9_ext, c("baseline_arm_1", "followup_arm_1"))
+compute_all_item_missingness(temp_dat, "bbsiq_neg_int_m " , mdib_dat_items$bbsiq_neg_int,  c("baseline_arm_1", "followup_arm_1"))
+compute_all_item_missingness(temp_dat, "bbsiq_neg_ext_m " , mdib_dat_items$bbsiq_neg_ext,  c("baseline_arm_1", "followup_arm_1"))
+compute_all_item_missingness(temp_dat, "asi_m"            , mdib_dat_items$asi,            "baseline_arm_1")
+compute_all_item_missingness(temp_dat, "asi_red_phy_m"    , mdib_dat_items$asi_red_phy,    "baseline_arm_1")
+compute_all_item_missingness(temp_dat, "asi_red_cog_m"    , mdib_dat_items$asi_red_cog,    "baseline_arm_1")
+compute_all_item_missingness(temp_dat, "asi_red_soc_m"    , mdib_dat_items$asi_red_soc,    "baseline_arm_1")
+compute_all_item_missingness(temp_dat, "bfne2_8_m"        , mdib_dat_items$bfne2_8,        "baseline_arm_1")
+compute_all_item_missingness(temp_dat, "neuroqol_anx_m"   , mdib_dat_items$neuroqol_anx,   c("baseline_arm_1", "followup_arm_1"))
+compute_all_item_missingness(temp_dat, "sads_m"           , mdib_dat_items$sads,           "baseline_arm_1")
+compute_all_item_missingness(temp_dat, "sads_red_m"       , mdib_dat_items$sads_red,       "followup_arm_1")
+compute_all_item_missingness(temp_dat, "auditc_m"         , mdib_dat_items$auditc,         "baseline_arm_1")
 
 sink()
 
@@ -537,9 +558,8 @@ mdib_hd_dat$auditc_m[is.nan(mdib_hd_dat$auditc_m)]                 <- NA
 
 # Restrict to MDIB items at baseline
 
-mdib_items <- c(mdib_dat_items$mdib_neg, mdib_dat_items$mdib_ben)
-
-mdib_bl <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1", mdib_items]
+mdib_bl <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1",
+                       c(mdib_dat_items$mdib_neg, mdib_dat_items$mdib_ben)]
 
 # Order columns by item number
 
@@ -578,11 +598,6 @@ write.csv(mdib_bl_item_missing_tbl, paste0(missing_rates_path, "mdib_bl_item_mis
 
 # Remove 5 participants with incomplete MDIB data at baseline, leaving an overall 
 # analysis sample of 65 participants
-
-incompl_mdib_bl_data_ids <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1" &
-                                          rowSums(is.na(mdib_hd_dat[, mdib_items])) > 0, "record_id"]
-
-length(incompl_mdib_bl_data_ids) == 5
 
 mdib_hd_dat <- mdib_hd_dat[!(mdib_hd_dat$record_id %in% incompl_mdib_bl_data_ids), ]
 
