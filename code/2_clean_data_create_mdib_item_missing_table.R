@@ -419,6 +419,52 @@ mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1" &
             c("alcohol_audit_c_2", "alcohol_audit_c_3")] <- 0
 
 # ---------------------------------------------------------------------------- #
+# Compute scale-level missing data rates due to "prefer not to answer" for all items ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to compute number of scale scores across specified time points
+# that will be missing due to "prefer not to answer" (coded as 99) for all items
+
+compute_all_item_missingness <- function(dat, scale, items, time_points) {
+  dat <- dat[dat$redcap_event_name %in% time_points, ]
+  
+  pna <- 99
+  
+  rows_all_items_pna <- rowSums(dat[, items] == pna, na.rm = TRUE) == length(items)
+  n_rows_all_items_pna <- sum(rows_all_items_pna)
+  
+  cat(scale, ": ", n_rows_all_items_pna, "\n", sep = "")
+  
+  print(table(dat[rows_all_items_pna, "redcap_event_name"]))
+  cat("\n", "-----", "\n\n")
+}
+
+# Run function and write results
+
+missing_rates_path <- "./results/missing_rates/"
+dir.create(missing_rates_path)
+
+sink(file = paste0(missing_rates_path, "all_item_missingness.txt"))
+
+cat("Number of Scale Scores Missing Due to 'Prefer Not to Answer' for All Items:", "\n\n")
+
+compute_all_item_missingness(mdib_hd_dat, "mdib_neg_9_int_m" , mdib_dat_items$mdib_neg_9_int, c("baseline_arm_1", "followup_arm_1"))
+compute_all_item_missingness(mdib_hd_dat, "mdib_neg_9_ext_m" , mdib_dat_items$mdib_neg_9_ext, c("baseline_arm_1", "followup_arm_1"))
+compute_all_item_missingness(mdib_hd_dat, "bbsiq_neg_int_m " , mdib_dat_items$bbsiq_neg_int,  c("baseline_arm_1", "followup_arm_1"))
+compute_all_item_missingness(mdib_hd_dat, "bbsiq_neg_ext_m " , mdib_dat_items$bbsiq_neg_ext,  c("baseline_arm_1", "followup_arm_1"))
+compute_all_item_missingness(mdib_hd_dat, "asi_m"            , mdib_dat_items$asi,            "baseline_arm_1")
+compute_all_item_missingness(mdib_hd_dat, "asi_red_phy_m"    , mdib_dat_items$asi_red_phy,    "baseline_arm_1")
+compute_all_item_missingness(mdib_hd_dat, "asi_red_cog_m"    , mdib_dat_items$asi_red_cog,    "baseline_arm_1")
+compute_all_item_missingness(mdib_hd_dat, "asi_red_soc_m"    , mdib_dat_items$asi_red_soc,    "baseline_arm_1")
+compute_all_item_missingness(mdib_hd_dat, "bfne2_8_m"        , mdib_dat_items$bfne2_8,        "baseline_arm_1")
+compute_all_item_missingness(mdib_hd_dat, "neuroqol_anx_m"   , mdib_dat_items$neuroqol_anx,   c("baseline_arm_1", "followup_arm_1"))
+compute_all_item_missingness(mdib_hd_dat, "sads_m"           , mdib_dat_items$sads,           "baseline_arm_1")
+compute_all_item_missingness(mdib_hd_dat, "sads_red_m"       , mdib_dat_items$sads_red,       "followup_arm_1")
+compute_all_item_missingness(mdib_hd_dat, "auditc_m"         , mdib_dat_items$auditc,         "baseline_arm_1")
+
+sink()
+
+# ---------------------------------------------------------------------------- #
 # Recode "prefer not to answer" values ----
 # ---------------------------------------------------------------------------- #
 
@@ -523,9 +569,6 @@ mdib_bl_item_missing_tbl <- mdib_bl_item_missing_tbl[mdib_bl_item_missing_tbl$n_
 row.names(mdib_bl_item_missing_tbl) <- 1:nrow(mdib_bl_item_missing_tbl)
 
 # Export table to CSV
-
-missing_rates_path <- "./results/missing_rates/"
-dir.create(missing_rates_path)
 
 write.csv(mdib_bl_item_missing_tbl, paste0(missing_rates_path, "mdib_bl_item_missing_tbl.csv"), row.names = FALSE)
 
