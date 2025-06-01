@@ -385,16 +385,10 @@ relevant_ids <- auditc_bl[rows_all_items_na_auditc, "record_id"]
 
 
 
-  # 2. REDCap skipped Items 2-3 (not applicable) when Item 1 was 0 ("never")
+  # 2. REDCap skipped Items 2-3 (recode NA as 0 later in script) when Item 1 was 0 ("never")
 
 sum(is.na(auditc_bl[!is.na(auditc_bl$alcohol_audit_c_1) & auditc_bl$alcohol_audit_c_1 == 0,
                     c("alcohol_audit_c_2", "alcohol_audit_c_3")])) == 24
-
-    # TODO: Given this, consider recoding Items 2-3 as 0 when Item 1 is 0
-
-
-
-
 
 # Some reduced SADS items are already NA at follow-up (reason below)
 
@@ -411,6 +405,18 @@ n_rows_all_items_na_sads_red <- sum(rows_all_items_na_sads_red)
 n_rows_all_items_na_sads_red == 23
 
 n_rows_all_items_na_sads_red * length(mdib_dat_items$sads_red) == n_obs_na_sads_red
+
+# ---------------------------------------------------------------------------- #
+# Recode AUDIT-C items ----
+# ---------------------------------------------------------------------------- #
+
+# Given that REDCap skipped Items 2-3 (not applicable) when Item 1 was 0 ("never";
+# see above), recode Items 2-3 as 0 when Item 1 is 0
+
+mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1" &
+              !is.na(mdib_hd_dat$alcohol_audit_c_1) &
+              mdib_hd_dat$alcohol_audit_c_1 == 0,
+            c("alcohol_audit_c_2", "alcohol_audit_c_3")] <- 0
 
 # ---------------------------------------------------------------------------- #
 # Recode "prefer not to answer" values ----
