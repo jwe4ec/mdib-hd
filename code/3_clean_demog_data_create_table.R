@@ -10,6 +10,9 @@
 # Before running script, restart R (CTRL+SHIFT+F10 on Windows) and set working 
 # directory to parent folder
 
+# The resulting demographics table was manually split into two tables, and some
+# of the variables were manually removed per a reviewer's request
+
 # ---------------------------------------------------------------------------- #
 # Store working directory, check correct R version, load packages ----
 # ---------------------------------------------------------------------------- #

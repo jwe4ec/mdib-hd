@@ -37,6 +37,14 @@ groundhog_day <- version_control()
 mdib_hd_dat <- read.csv("./data/bot_cleaned/final HD Aim 1 data_deid_OSF.csv")
 
 # ---------------------------------------------------------------------------- #
+# Define time point objects used throughout script ----
+# ---------------------------------------------------------------------------- #
+
+bl   <- "baseline_arm_1"
+fu   <- "followup_arm_1"
+both <- c(bl, fu)
+
+# ---------------------------------------------------------------------------- #
 # Remove blank rows ----
 # ---------------------------------------------------------------------------- #
 
@@ -64,7 +72,7 @@ target_cols <- names(mdib_hd_dat)[!(names(mdib_hd_dat) %in% c("record_id", "redc
 row_never_started <- vector(length = nrow(mdib_hd_dat))
 
 for (i in 1:nrow(mdib_hd_dat)) {
-  row_never_started[[i]] <- mdib_hd_dat$redcap_event_name[[i]] == "baseline_arm_1" &
+  row_never_started[[i]] <- mdib_hd_dat$redcap_event_name[[i]] == bl &
     all(apply(mdib_hd_dat[i, target_cols], 2, function(x) is.na(x) | x %in% c(0, "")))
 }
 
@@ -202,6 +210,9 @@ mdib_items_rename <-
     "mdib_neg_ext_neighbor_5a", "mdib_neg_int_email_6b",    "mdib_neg_ext_exercise_7a",   "mdib_neg_int_medication_8b",
     "mdib_neg_ext_walk_9c",     "mdib_neg_ext_job_10a",     "mdib_neg_ext_stumble_11c",   "mdib_neg_int_cough_12b")
 
+item_number <- sub(".*_(\\d+[a-z])$", "\\1", mdib_items_rename) # Get item number
+item_number <- sub("^([0-9])([a-z])$", "0\\1\\2", item_number)  # Pad 1-digit numbers with leading 0
+
 meaning <-
   c("ben", "ben", "ben", "ben",
     "ben", "ben", "ben", "ben",
@@ -226,6 +237,7 @@ domain <-
 
 mdib_item_map <- data.frame(items        = mdib_items,
                             items_rename = mdib_items_rename,
+                            item_number  = item_number,
                             meaning      = meaning,
                             domain       = domain)
 
@@ -339,6 +351,141 @@ mdib_dat_items <- list(mdib_neg       = mdib_neg_items,
                        auditc         = auditc_items)
 
 # ---------------------------------------------------------------------------- #
+# Inspect NA values ----
+# ---------------------------------------------------------------------------- #
+
+# No MDIB, BBSIQ, or Neuro-QoL Anxiety items are already NA at baseline or follow-up
+
+sum(is.na(mdib_hd_dat[, c(mdib_dat_items$mdib_neg, mdib_dat_items$mdib_ben,
+                          mdib_dat_items$bbsiq_neg, mdib_dat_items$bbsiq_ben,
+                          mdib_dat_items$neuroqol_anx)])) == 0
+
+# No ASI, BFNE-2, or SADS items are already NA at baseline
+
+sum(is.na(mdib_hd_dat[mdib_hd_dat$redcap_event_name == bl, 
+                      c(mdib_dat_items$asi,
+                        mdib_dat_items$bfne2,
+                        mdib_dat_items$sads)])) == 0
+
+# Some AUDIT-C items are already NA at baseline (reasons below)
+
+auditc_bl <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == bl,
+                         c("record_id", "alcohol_ever", mdib_dat_items$auditc)]
+
+n_obs_na_auditc <- sum(is.na(auditc_bl[, mdib_dat_items$auditc]))
+n_obs_na_auditc == 60
+
+  # 1. REDCap skipped all 3 items (recode NA as 0 later in script) if "alcohol_ever" 
+  # was 0 (not had alcohol in life)
+
+sum(is.na(auditc_bl[auditc_bl$alcohol_ever == 0, mdib_dat_items$auditc])) == 36
+
+  # 2. REDCap skipped Items 2-3 (recode NA as 0 later in script) when Item 1 was 0 ("never")
+
+sum(is.na(auditc_bl[!is.na(auditc_bl$alcohol_audit_c_1) & auditc_bl$alcohol_audit_c_1 == 0,
+                    c("alcohol_audit_c_2", "alcohol_audit_c_3")])) == 24
+
+# Some reduced SADS items are already NA at follow-up (reason below)
+
+sads_red_fu <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == fu, 
+                           c("record_id", mdib_dat_items$sads_red)]
+
+n_obs_na_sads_red <- sum(is.na(sads_red_fu[, mdib_dat_items$sads_red]))
+n_obs_na_sads_red == 184
+
+  # Was not administered to 23 participants
+
+rows_all_items_na_sads_red <- rowSums(!is.na(sads_red_fu[, mdib_dat_items$sads_red])) == 0
+n_rows_all_items_na_sads_red <- sum(rows_all_items_na_sads_red)
+n_rows_all_items_na_sads_red == 23
+
+n_rows_all_items_na_sads_red * length(mdib_dat_items$sads_red) == n_obs_na_sads_red
+
+# ---------------------------------------------------------------------------- #
+# Recode AUDIT-C items ----
+# ---------------------------------------------------------------------------- #
+
+# Given that REDCap skipped Items 2-3 (not applicable) when Item 1 was 0 ("never";
+# see above), recode Items 2-3 as 0 when Item 1 is 0
+
+mdib_hd_dat[mdib_hd_dat$redcap_event_name == bl &
+              !is.na(mdib_hd_dat$alcohol_audit_c_1) & mdib_hd_dat$alcohol_audit_c_1 == 0,
+            c("alcohol_audit_c_2", "alcohol_audit_c_3")] <- 0
+
+# Given that REDCap skipped all 3 items (not applicable) if "alcohol_ever" was 0 
+# (not had alcohol in life), recode Items 1-3 as 0 when "alcohol_ever" is 0
+
+mdib_hd_dat[mdib_hd_dat$redcap_event_name == bl &
+              !is.na(mdib_hd_dat$alcohol_ever) & mdib_hd_dat$alcohol_ever == 0,
+            c("alcohol_audit_c_1", "alcohol_audit_c_2", "alcohol_audit_c_3")] <- 0
+
+# ---------------------------------------------------------------------------- #
+# Identify participants with incomplete MDIB data at baseline   ----
+# ---------------------------------------------------------------------------- #
+
+# Identify such participants (because no MDIB items are already NA [see above], 
+# identify those that are PNA [coded as 99]) but do not remove them from overall 
+# dataset until end of this script
+
+mdib_items <- c(mdib_dat_items$mdib_neg, mdib_dat_items$mdib_ben)
+
+incompl_mdib_bl_data_ids <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == bl &
+                                          rowSums(mdib_hd_dat[, mdib_items] == 99) > 0, "record_id"]
+
+length(incompl_mdib_bl_data_ids) == 5
+
+# ---------------------------------------------------------------------------- #
+# Compute scale-level missing data rates due to "prefer not to answer" for all items ----
+# ---------------------------------------------------------------------------- #
+
+# Remove participants with incomplete MDIB data at baseline for this computation,
+# which needs to be done before "prefer not to answer" values are recoded as NA
+
+temp_dat <- mdib_hd_dat[!(mdib_hd_dat$record_id %in% incompl_mdib_bl_data_ids), ]
+
+# Define function to compute number of scale scores across specified time points
+# that will be missing due to "prefer not to answer" (coded as 99) for all items
+
+compute_all_item_missingness <- function(dat, scale, items, time_points) {
+  dat <- dat[dat$redcap_event_name %in% time_points, ]
+  
+  pna <- 99
+  
+  rows_all_items_pna <- rowSums(dat[, items] == pna, na.rm = TRUE) == length(items)
+  n_rows_all_items_pna <- sum(rows_all_items_pna)
+  
+  cat(scale, ": ", n_rows_all_items_pna, "\n", sep = "")
+  
+  print(table(dat[rows_all_items_pna, "redcap_event_name"]))
+  cat("\n", "-----", "\n\n")
+}
+
+# Run function and write results
+
+missing_rates_path <- "./results/missing_rates/"
+dir.create(missing_rates_path)
+
+sink(file = paste0(missing_rates_path, "all_item_missingness.txt"))
+
+cat("Number of Scale Scores Missing Due to 'Prefer Not to Answer' for All Items:", "\n\n")
+
+compute_all_item_missingness(temp_dat, "mdib_neg_9_int_m" , mdib_dat_items$mdib_neg_9_int, both)
+compute_all_item_missingness(temp_dat, "mdib_neg_9_ext_m" , mdib_dat_items$mdib_neg_9_ext, both)
+compute_all_item_missingness(temp_dat, "bbsiq_neg_int_m"  , mdib_dat_items$bbsiq_neg_int,  both)
+compute_all_item_missingness(temp_dat, "bbsiq_neg_ext_m"  , mdib_dat_items$bbsiq_neg_ext,  both)
+compute_all_item_missingness(temp_dat, "asi_m"            , mdib_dat_items$asi,            bl)
+compute_all_item_missingness(temp_dat, "asi_red_phy_m"    , mdib_dat_items$asi_red_phy,    bl)
+compute_all_item_missingness(temp_dat, "asi_red_cog_m"    , mdib_dat_items$asi_red_cog,    bl)
+compute_all_item_missingness(temp_dat, "asi_red_soc_m"    , mdib_dat_items$asi_red_soc,    bl)
+compute_all_item_missingness(temp_dat, "bfne2_8_m"        , mdib_dat_items$bfne2_8,        bl)
+compute_all_item_missingness(temp_dat, "neuroqol_anx_m"   , mdib_dat_items$neuroqol_anx,   both)
+compute_all_item_missingness(temp_dat, "sads_m"           , mdib_dat_items$sads,           bl)
+compute_all_item_missingness(temp_dat, "sads_red_m"       , mdib_dat_items$sads_red,       fu)
+compute_all_item_missingness(temp_dat, "auditc_m"         , mdib_dat_items$auditc,         bl)
+
+sink()
+
+# ---------------------------------------------------------------------------- #
 # Recode "prefer not to answer" values ----
 # ---------------------------------------------------------------------------- #
 
@@ -406,22 +553,100 @@ mdib_hd_dat$sads_red_m[is.nan(mdib_hd_dat$sads_red_m)]             <- NA
 mdib_hd_dat$auditc_m[is.nan(mdib_hd_dat$auditc_m)]                 <- NA
 
 # ---------------------------------------------------------------------------- #
+# Create table of item-level missingness for MDIB at baseline ----
+# ---------------------------------------------------------------------------- #
+
+# Restrict to MDIB items at baseline
+
+mdib_bl <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == bl,
+                       c(mdib_dat_items$mdib_neg, mdib_dat_items$mdib_ben)]
+
+# Order columns by item number
+
+mdib_item_map <- mdib_item_map[order(mdib_item_map$item_number), ]
+
+mdib_bl <- mdib_bl[match(mdib_item_map$items_rename, names(mdib_bl))]
+
+# Compute number and proportion of participants (out of 70) missing each item
+
+(n <- nrow(mdib_bl)) == 70
+
+item_n_missing      <- colSums(is.na(mdib_bl))
+item_perc_missing   <- format(round((item_n_missing / n) * 100, 1),
+                              nsmall = 1, trim = TRUE)
+item_n_perc_missing <- paste0(item_n_missing, " (", item_perc_missing, ")")
+
+mdib_bl_item_missing_tbl <- data.frame(domain         = mdib_item_map$domain,
+                                       item           = names(mdib_bl),
+                                       meaning        = mdib_item_map$meaning,
+                                       n_missing      = item_n_missing,
+                                       n_perc_missing = item_n_perc_missing)
+
+  # Restrict to items not answered by at least 1 participant
+
+mdib_bl_item_missing_tbl <- mdib_bl_item_missing_tbl[mdib_bl_item_missing_tbl$n_missing > 0, ]
+
+row.names(mdib_bl_item_missing_tbl) <- 1:nrow(mdib_bl_item_missing_tbl)
+
+# Export table to CSV
+
+write.csv(mdib_bl_item_missing_tbl, paste0(missing_rates_path, "mdib_bl_item_missing_tbl.csv"), row.names = FALSE)
+
+# ---------------------------------------------------------------------------- #
 # Remove participants with incomplete MDIB data at baseline ----
 # ---------------------------------------------------------------------------- #
 
 # Remove 5 participants with incomplete MDIB data at baseline, leaving an overall 
 # analysis sample of 65 participants
 
-mdib_items <- c(mdib_dat_items$mdib_neg, mdib_dat_items$mdib_ben)
-
-incompl_mdib_bl_data_ids <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == "baseline_arm_1" &
-                                          rowSums(is.na(mdib_hd_dat[, mdib_items])) > 0, "record_id"]
-
-length(incompl_mdib_bl_data_ids) == 5
-
 mdib_hd_dat <- mdib_hd_dat[!(mdib_hd_dat$record_id %in% incompl_mdib_bl_data_ids), ]
 
 length(unique(mdib_hd_dat$record_id)) == 65
+
+# ---------------------------------------------------------------------------- #
+# Compute rates of item-level missingness ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to compute percentage of scale scores across specified time 
+# points computed with at least one item missing for given scale
+
+compute_some_item_missingness <- function(dat, scale, items, time_points) {
+  dat <- dat[dat$redcap_event_name %in% time_points, ]
+  
+  denom <- sum(!is.na(dat[, scale]))
+  
+  rows_at_least_one_item_na <- rowSums(is.na(dat[, items])) > 0
+  rows_all_items_na <- rowSums(!is.na(dat[, items])) == 0
+  
+  numer <- nrow(dat[rows_at_least_one_item_na & !rows_all_items_na, ])
+  
+  prop <- numer/denom
+  percent <- prop*100
+  
+  cat(scale, ": ", percent, "%", "\n", sep = "")
+}
+
+# Run function for ITT participants and write results
+
+sink(file = paste0(missing_rates_path, "some_item_missingness.txt"))
+
+cat("Percentages of Scale Scores Computed With At Least One Item Missing:", "\n\n")
+
+compute_some_item_missingness(mdib_hd_dat, "mdib_neg_9_int_m" , mdib_dat_items$mdib_neg_9_int, both)
+compute_some_item_missingness(mdib_hd_dat, "mdib_neg_9_ext_m" , mdib_dat_items$mdib_neg_9_ext, both)
+compute_some_item_missingness(mdib_hd_dat, "bbsiq_neg_int_m"  , mdib_dat_items$bbsiq_neg_int,  both)
+compute_some_item_missingness(mdib_hd_dat, "bbsiq_neg_ext_m"  , mdib_dat_items$bbsiq_neg_ext,  both)
+compute_some_item_missingness(mdib_hd_dat, "asi_m"            , mdib_dat_items$asi,            bl)
+compute_some_item_missingness(mdib_hd_dat, "asi_red_phy_m"    , mdib_dat_items$asi_red_phy,    bl)
+compute_some_item_missingness(mdib_hd_dat, "asi_red_cog_m"    , mdib_dat_items$asi_red_cog,    bl)
+compute_some_item_missingness(mdib_hd_dat, "asi_red_soc_m"    , mdib_dat_items$asi_red_soc,    bl)
+compute_some_item_missingness(mdib_hd_dat, "bfne2_8_m"        , mdib_dat_items$bfne2_8,        bl)
+compute_some_item_missingness(mdib_hd_dat, "neuroqol_anx_m"   , mdib_dat_items$neuroqol_anx,   both)
+compute_some_item_missingness(mdib_hd_dat, "sads_m"           , mdib_dat_items$sads,           bl)
+compute_some_item_missingness(mdib_hd_dat, "sads_red_m"       , mdib_dat_items$sads_red,       fu)
+compute_some_item_missingness(mdib_hd_dat, "auditc_m"         , mdib_dat_items$auditc,         bl)
+
+sink()
 
 # ---------------------------------------------------------------------------- #
 # Export data ----
