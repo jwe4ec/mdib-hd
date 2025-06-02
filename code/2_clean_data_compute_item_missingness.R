@@ -370,26 +370,15 @@ sum(is.na(mdib_hd_dat[mdib_hd_dat$redcap_event_name == bl,
 # Some AUDIT-C items are already NA at baseline (reasons below)
 
 auditc_bl <- mdib_hd_dat[mdib_hd_dat$redcap_event_name == bl,
-                         c("record_id", mdib_dat_items$auditc)]
+                         c("record_id", "alcohol_ever", mdib_dat_items$auditc)]
 
 n_obs_na_auditc <- sum(is.na(auditc_bl[, mdib_dat_items$auditc]))
 n_obs_na_auditc == 60
 
-  # TODO: 1. Was not administered to 12 participants? (asked Jessie on 5/31/25)
+  # 1. REDCap skipped all 3 items (recode NA as 0 later in script) if "alcohol_ever" 
+  # was 0 (not had alcohol in life)
 
-rows_all_items_na_auditc <- rowSums(!is.na(auditc_bl[, mdib_dat_items$auditc])) == 0
-n_rows_all_items_na_auditc <- sum(rows_all_items_na_auditc)
-n_rows_all_items_na_auditc == 12
-
-n_rows_all_items_na_auditc * length(mdib_dat_items$auditc) == 36
-
-relevant_ids <- auditc_bl[rows_all_items_na_auditc, "record_id"]
-
-# View(auditc_bl[auditc_bl$record_id %in% relevant_ids, ])
-
-
-
-
+sum(is.na(auditc_bl[auditc_bl$alcohol_ever == 0, mdib_dat_items$auditc])) == 36
 
   # 2. REDCap skipped Items 2-3 (recode NA as 0 later in script) when Item 1 was 0 ("never")
 
@@ -420,9 +409,15 @@ n_rows_all_items_na_sads_red * length(mdib_dat_items$sads_red) == n_obs_na_sads_
 # see above), recode Items 2-3 as 0 when Item 1 is 0
 
 mdib_hd_dat[mdib_hd_dat$redcap_event_name == bl &
-              !is.na(mdib_hd_dat$alcohol_audit_c_1) &
-              mdib_hd_dat$alcohol_audit_c_1 == 0,
+              !is.na(mdib_hd_dat$alcohol_audit_c_1) & mdib_hd_dat$alcohol_audit_c_1 == 0,
             c("alcohol_audit_c_2", "alcohol_audit_c_3")] <- 0
+
+# Given that REDCap skipped all 3 items (not applicable) if "alcohol_ever" was 0 
+# (not had alcohol in life), recode Items 1-3 as 0 when "alcohol_ever" is 0
+
+mdib_hd_dat[mdib_hd_dat$redcap_event_name == bl &
+              !is.na(mdib_hd_dat$alcohol_ever) & mdib_hd_dat$alcohol_ever == 0,
+            c("alcohol_audit_c_1", "alcohol_audit_c_2", "alcohol_audit_c_3")] <- 0
 
 # ---------------------------------------------------------------------------- #
 # Identify participants with incomplete MDIB data at baseline   ----
